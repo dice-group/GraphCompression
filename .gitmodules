@@ -1,0 +1,3 @@
+[submodule "RDFCompressionBenchmark"]
+	path = RDFCompressionBenchmark
+	url = https://github.com/ph1l1pF/RDFCompressionBenchmark
