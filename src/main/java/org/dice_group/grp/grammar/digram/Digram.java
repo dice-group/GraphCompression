@@ -63,8 +63,6 @@ public class Digram {
 		}
 		return false;
 	}
-	
-	
 
 	public Set<Integer> getExternalIndexes() {
 		return external;
@@ -80,6 +78,46 @@ public class Digram {
 
 	public void setNoOfOccurences(long occurences) {
 		this.occurences = occurences;
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((edgeLabel1 == null) ? 0 : edgeLabel1.hashCode());
+		result = prime * result + ((edgeLabel2 == null) ? 0 : edgeLabel2.hashCode());
+		result = prime * result + ((external == null) ? 0 : external.hashCode());
+		result = prime * result + (int) (occurences ^ (occurences >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Digram other = (Digram) obj;
+		if (edgeLabel1 == null) {
+			if (other.edgeLabel1 != null)
+				return false;
+		} else if (!edgeLabel1.equals(other.edgeLabel1))
+			return false;
+		if (edgeLabel2 == null) {
+			if (other.edgeLabel2 != null)
+				return false;
+		} else if (!edgeLabel2.equals(other.edgeLabel2))
+			return false;
+		if (external == null) {
+			if (other.external != null)
+				return false;
+		} else if (!external.equals(other.external))
+			return false;
+		if (occurences != other.occurences)
+			return false;
+		return true;
 	}
 	
 }
