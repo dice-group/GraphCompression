@@ -6,6 +6,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
+import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.index.Indexer;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
@@ -50,6 +51,7 @@ public class URIBasedIndexer implements Indexer {
 		tmpDict.reorganize();
 		dict.load(tmpDict, listener);
 		for(Statement stmt : stmts) {
+			//TODO does not work like that
 			String s = ":s"+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
 			String o = ":o"+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.OBJECT);
 			String p = ":p"+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
@@ -68,21 +70,22 @@ public class URIBasedIndexer implements Indexer {
 	}
 	
 	@Override
-	public Node getNodeFromID(String s) {
-		String nodePre = s.substring(1,2);
-		TripleComponentRole role= null;
-		switch(nodePre){
-		case "s":
-				role = TripleComponentRole.SUBJECT;		
-				break;
-		case "o":
-				role = TripleComponentRole.OBJECT;
-				break;
-		case "p":
-			role = TripleComponentRole.PREDICATE;
-		}
+	public Node getNodeFromID(String s, TripleComponentRole role ) {
+
 		int hdtID = Integer.valueOf(s.substring(2));
 		return getNodeFromID(hdtID, role);
+	}
+
+
+	@Override
+	public Grammar indexGrammar(Grammar grammar) {
+		for(String key : grammar.getRules().keySet()) {
+			Model graph = grammar.getRules().get(key);
+			graph = this.indexGraph(graph);
+			//overwrite old graph with indexed graph
+			grammar.getRules().put(key, graph);
+		}
+		return grammar;
 	}
 
 }

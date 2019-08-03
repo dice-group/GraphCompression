@@ -37,12 +37,13 @@ public class RDFCompressor {
 		Model graph = readFileToModel(rdfFile);
 		//Map<Long, String> dict = new HashMap<Long, String>();
 		TempDictionary dict = DictionaryFactory.createTempDictionary(new HDTSpecification());
-		Indexer indexer = new URIBasedIndexer(dict);
-		graph = indexer.indexGraph(graph);
+		
 		Grammar grammar = createGrammar(graph);
 		//TODO prune grammar
-
+		
 		//TODO compress grammar and dict into bin file
+		Indexer indexer = new URIBasedIndexer(dict);
+		grammar = indexer.indexGrammar(grammar);
 		GRPWriter.save(grammar, dict);
 		//DONE
 		return null;

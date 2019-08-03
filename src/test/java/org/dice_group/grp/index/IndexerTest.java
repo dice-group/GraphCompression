@@ -18,6 +18,7 @@ import org.dice_group.grp.index.impl.URIBasedIndexer;
 import org.junit.Test;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.options.HDTSpecification;
 
 public class IndexerTest {
@@ -68,7 +69,18 @@ public class IndexerTest {
 		}
 		Map<String, Node> nodeToOrig = new HashMap<String, Node>();
 		for(String s : nodes) {
-			Node n = index.getNodeFromID(s);
+			char pre = s.charAt(1);
+			TripleComponentRole role=null;
+			if(pre=='s') {
+				role = TripleComponentRole.SUBJECT;
+			}
+			if(pre=='p') {
+				role = TripleComponentRole.PREDICATE;
+			}
+			if(pre=='o') {
+				role = TripleComponentRole.OBJECT;
+			}
+			Node n = index.getNodeFromID(s, role);
 			nodeToOrig.put(s, n);
 			System.out.println("Node "+s+" ---> "+n);
 		}
