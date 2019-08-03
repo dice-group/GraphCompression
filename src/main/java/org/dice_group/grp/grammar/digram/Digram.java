@@ -27,6 +27,13 @@ public class Digram {
 	
 	/**
 	 * 
+	 * Be aware that external Indexes be also like
+	 * 
+	 * 0 - e1 -> 1 ------|
+	 * 		     ^ - e2 -|
+	 * 
+	 * in that case 1=2=3 if 1 is external, should be all set 
+	 * 
 	 * @param edgeLabel1
 	 * @param edgeLabel2
 	 * @param externalIndexes is subset of {0,1,2,3} with 0 -e1-> 1 and 2 -e2-> 3 

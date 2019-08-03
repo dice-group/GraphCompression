@@ -1,8 +1,7 @@
 package org.dice_group.grp.compression;
 
-import java.util.Map;
-
 import org.dice_group.grp.grammar.Grammar;
+import org.rdfhdt.hdt.dictionary.TempDictionary;
 
 /**
  * Compresses the resulting Grammar and Dictionary into 
@@ -12,9 +11,9 @@ import org.dice_group.grp.grammar.Grammar;
  * @author minimal
  *
  */
-public class Finalizer {
+public class GRPWriter {
 
-	public static void save(Grammar grammar, Map<Long, String> dict) {
+	public static void save(Grammar grammar, TempDictionary dict) {
 		// TODO Auto-generated method stub
 		
 	}

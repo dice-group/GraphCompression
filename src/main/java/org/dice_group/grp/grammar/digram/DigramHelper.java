@@ -11,7 +11,7 @@ import org.apache.jena.rdf.model.Statement;
 
 public class DigramHelper {
 
-	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, Set<RDFNode> externals) {
+	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, List<RDFNode> externals) {
 		Set<Integer> externalIndex = new HashSet<Integer>();
 		for(RDFNode node : externals) {
 			if(e1.getSubject().equals(node)) {
