@@ -2,15 +2,15 @@ package org.dice_group.grp.grammar;
 
 public class GrammarHelper {
 
-	public static final String NON_TERMINAL_PREFIX = "n:";
+	public static final String NON_TERMINAL_PREFIX = ":n";
 	
-	private Long nonT = 0l;
+	private static Long nonT = 0l;
 	
 	/**
 	 * This is our Non Terminal 
 	 * @return
 	 */
-	public String getNextNonTerminal() {
+	public static String getNextNonTerminal() {
 
 		return NON_TERMINAL_PREFIX+nonT++;
 	}

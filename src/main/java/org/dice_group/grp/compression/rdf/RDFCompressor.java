@@ -30,9 +30,7 @@ import org.rdfhdt.hdt.options.HDTSpecification;
 
 public class RDFCompressor {
 
-	
-	private GrammarHelper grammarHelper = new GrammarHelper();
-	
+		
 	public File compressRDF(File rdfFile) throws FileNotFoundException, NotAllowedInRDFException{
 		Model graph = readFileToModel(rdfFile);
 		//Map<Long, String> dict = new HashMap<Long, String>();
@@ -59,9 +57,9 @@ public class RDFCompressor {
 			if(mfd.getNoOfOccurences()<=1) {
 				break;
 			}
-			String uriNT = grammarHelper.getNextNonTerminal();
+			String uriNT = GrammarHelper.getNextNonTerminal();
 			graph = replaceAllOccurences(uriNT, digrams.get(mfd), graph);
-			grammar.addRule(uriNT, graph);
+			grammar.addRule(uriNT, mfd);
 			updateOccurences(digrams, frequenceList);
 		}
 		return grammar;
@@ -89,7 +87,7 @@ public class RDFCompressor {
 	 * @return
 	 * @throws NotAllowedInRDFException 
 	 */
-	private Model replaceAllOccurences(String uriNT, Set<DigramOccurence> set, Model graph) throws NotAllowedInRDFException {
+	protected Model replaceAllOccurences(String uriNT, Set<DigramOccurence> set, Model graph) throws NotAllowedInRDFException {
 		Property p = ResourceFactory.createProperty(uriNT);
 		for(DigramOccurence docc : set) {
 			graph.remove(docc.getEdge1());
@@ -111,8 +109,8 @@ public class RDFCompressor {
 			if(docc.getExternals().size()>2) {
 				throw new NotAllowedInRDFException("Digrams cannot have more than 2 externals in RDF");
 			}
-			docc.getExternals();
-			graph.add(graph);
+			//docc.getExternals();
+			//graph.add(graph);
 		}
 		return graph;
 	}
