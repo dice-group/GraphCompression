@@ -2,11 +2,9 @@ package org.dice_group.grp.grammar.digram;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
@@ -17,14 +15,9 @@ import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.rdf.model.Selector;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
-import org.apache.jena.tdb.store.Hash;
-
-import com.google.common.collect.Iterators;
 
 public class DigramHelper {
 	
@@ -124,18 +117,65 @@ public class DigramHelper {
 		        	stmt2  = ResourceFactory.createStatement(n2.asResource(), e2, n3);
 				}
 		        
-		        Set<RDFNode> externals = new HashSet<RDFNode>();
-		        externals.add(n1);
-		        externals.add(n3);
-		        
-		        Digram digram = new Digram(e1, e2, getExternalIndexes(stmt1, stmt2, externals));
-		        digrams.add(digram);
+				if(!stmt1.equals(stmt2)) {
+					Set<RDFNode> externals = findExternals(stmt1, stmt2, graph);
+			        Digram digram = new Digram(e1, e2, getExternalIndexes(stmt1, stmt2, externals));
+			        digrams.add(digram);
+				}
 		    }
 		}
 		return digrams;
 	}
 	
-	private static List<QuerySolution> queryModel(Model graph, String sparqlQuery) {
+	/**
+	 * Checks which of the nodes of both statements, are connected to the overall graph
+	 * @param stmt1
+	 * @param stmt2
+	 * @param graph
+	 * @return
+	 */
+	public static Set<RDFNode> findExternals(Statement stmt1, Statement stmt2, Model graph){
+		Set<RDFNode> externals = new HashSet<RDFNode>();
+		
+		String sparql = "select ?n1 ?e1 ?n2 ?e2 ?n3 where {\n" + 
+				"VALUES (?n1) { ( \"" + stmt1.getSubject() + "\" ) "
+								+ "( \""+ stmt1.getObject() +"\" ) "
+								+ "( \""+ stmt2.getSubject() +"\" ) "
+								+ "( \""+ stmt2.getObject()+"\" )}\n" + 
+				"{?n1 ?e1 ?n2 .}\n" + 
+				"UNION\n" + 
+				"{?n3 ?e2 ?n1 .}\n" + 
+				"}";
+		
+		List<QuerySolution> results = queryModel(graph, sparql);
+		
+		for(QuerySolution solution: results){			
+			Statement s1 = null;
+			RDFNode curNode = solution.get("n1");
+			if(curNode.isResource()) {
+				curNode = solution.getResource("n1");
+				
+				Property e1 = ResourceFactory.createProperty(solution.get("e1").toString());
+				s1 = ResourceFactory.createStatement(curNode.asResource(), e1, solution.get("n3"));
+			}
+			
+			Property e2 = ResourceFactory.createProperty(solution.get("e2").toString());
+			Statement s2 = ResourceFactory.createStatement(solution.getResource("n3"), e2, curNode);
+			
+			if( !stmt1.equals(s1) && !stmt1.equals(s2) &&
+					!stmt2.equals(s1) && !stmt2.equals(s2)
+					
+					//(s1 != null && !stmt1.equals(s1) && !stmt1.equals(s2)) && //||
+					//(!stmt2.equals(s1) && !stmt2.equals(s2))
+					) {
+				externals.add(curNode);
+			}
+			
+		}		
+		return externals;
+	}
+	
+	public static List<QuerySolution> queryModel(Model graph, String sparqlQuery) {
 		Query query = QueryFactory.create(sparqlQuery);
 		QueryExecution queryExecution = QueryExecutionFactory.create(query, graph);
 		List<QuerySolution> querySolutionList = new ArrayList<QuerySolution>();

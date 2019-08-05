@@ -18,7 +18,7 @@ public class DigramTest {
 		Set<Digram> digrams = DigramHelper.findDigrams(graph);
 		
 		for(Digram digram: digrams) {
-			System.out.println(digram.toString());
+			System.out.println(digram.getEdgeLabel1() +" - "+ digram.getEdgeLabel2() +" - " + digram.getExternalIndexes());
 		}
 
 			
