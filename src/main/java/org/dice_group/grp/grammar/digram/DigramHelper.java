@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,6 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.rdf.model.StmtIterator;
 
 public class DigramHelper {
 	
@@ -25,19 +25,16 @@ public class DigramHelper {
 			"?n1 ?e1 ?n2 .\n" + 
 			"\n" + 
 			"?n2 ?e2 ?n3 .\n" + 
-			"\n" + 
 			"} ";
 	private static final String CASE_2 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
 			"?n1 ?e1 ?n2 .\n" + 
 			"\n" + 
 			"?n3 ?e2 ?n2 .\n" + 
-			"\n" + 
 			"} ";
 	private static final String CASE_3 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
 			"?n2 ?e1 ?n1 .\n" + 
 			"\n" + 
 			"?n2 ?e2 ?n3 .\n" + 
-			"\n" + 
 			"} ";
 	
 	private static final String [] CASES = {
@@ -45,7 +42,6 @@ public class DigramHelper {
 		CASE_2, 
 		CASE_3	
 	};
-	
 	
 
 	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, Set<RDFNode> externals) {
@@ -83,10 +79,27 @@ public class DigramHelper {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
-	// TODO while searching for the digrams, we already search for the occurrences ??
-	public static Set<Digram> findDigrams(Model graph) {		
-		Set<Digram> digrams = new HashSet<Digram>();
+
+	/**
+	 * Searches the model for non overlapping occurrences, based on three main patterns:
+	 * Case 1:
+	 * n1 e1 n2*
+	 * n2* e2 n3
+	 * 
+	 * Case 2:
+	 * n1 e1 n2*
+	 * n3 e2 n2*
+	 * 
+	 * Case 3:
+	 * n2* e1 n1
+	 * n2* e2 n3
+	 * 
+	 * 
+	 * @param graph
+	 * @return
+	 */
+	public static Set<DigramOccurence> findDigramOccurrences(Model graph) {		
+		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
 		
 		for(int i = 0; i< CASES.length; i++) {
 			List<QuerySolution>  results = queryModel(graph, CASES[i]);
@@ -104,26 +117,46 @@ public class DigramHelper {
 		        Statement stmt2 = null;
 		        if(CASES[i].equals(CASE_1)) {
 		        	stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
-		        	stmt2  = ResourceFactory.createStatement(n2.asResource(), e2, n3);
+		        	stmt2 = ResourceFactory.createStatement(n2.asResource(), e2, n3);
 		        }
 		        
 				if(CASES[i].equals(CASE_2)) {
 					stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
-		        	stmt2  = ResourceFactory.createStatement(n3.asResource(), e2, n2);
+		        	stmt2 = ResourceFactory.createStatement(n3.asResource(), e2, n2);
 				}
 				
 				if(CASES[i].equals(CASE_3)) {
 					stmt1 = ResourceFactory.createStatement(n2.asResource(), e1, n1);
-		        	stmt2  = ResourceFactory.createStatement(n2.asResource(), e2, n3);
+		        	stmt2 = ResourceFactory.createStatement(n2.asResource(), e2, n3);
 				}
-		        
+				
 				if(!stmt1.equals(stmt2)) {
 					Set<RDFNode> externals = findExternals(stmt1, stmt2, graph);
-			        Digram digram = new Digram(e1, e2, getExternalIndexes(stmt1, stmt2, externals));
-			        digrams.add(digram);
+//					
+//			        Digram digram = new Digram(e1, e2, getExternalIndexes(stmt1, stmt2, externals));
+//			        digrams.add(digram);
+//			        
+			        //it's only an occurrence if it has at least one external node
+			        if(!externals.isEmpty()) {
+			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals);
+						occurrences.add(occurrence);
+			        }
 				}
 		    }
 		}
+		return occurrences;
+	}
+	
+	/**
+	 * 
+	 * @param occurrences
+	 * @return
+	 */
+	public static Set<Digram> getDigrams (Set<DigramOccurence> occurrences){
+		Set<Digram> digrams = new HashSet<Digram>();
+		occurrences.forEach(occur->{
+			digrams.add(occur.getDigram());
+		});		
 		return digrams;
 	}
 	
@@ -132,49 +165,70 @@ public class DigramHelper {
 	 * @param stmt1
 	 * @param stmt2
 	 * @param graph
-	 * @return
+	 * @return the set of external nodes
 	 */
 	public static Set<RDFNode> findExternals(Statement stmt1, Statement stmt2, Model graph){
 		Set<RDFNode> externals = new HashSet<RDFNode>();
 		
-		String sparql = "select ?n1 ?e1 ?n2 ?e2 ?n3 where {\n" + 
-				"VALUES (?n1) { ( \"" + stmt1.getSubject() + "\" ) "
-								+ "( \""+ stmt1.getObject() +"\" ) "
-								+ "( \""+ stmt2.getSubject() +"\" ) "
-								+ "( \""+ stmt2.getObject()+"\" )}\n" + 
-				"{?n1 ?e1 ?n2 .}\n" + 
-				"UNION\n" + 
-				"{?n3 ?e2 ?n1 .}\n" + 
-				"}";
 		
-		List<QuerySolution> results = queryModel(graph, sparql);
+		StringBuilder stb = new StringBuilder("select ?n1 ?e1 ?n2 ?e2 ?n3 where { ");
+		stb.append("VALUES (?n1) { ( ");
+		stb.append("<" + stmt1.getSubject() + "> ) ");
+		if(stmt1.getObject().isResource()) {
+			stb.append("(<" + stmt1.getObject() + "> ) ");
+		} else {
+			stb.append("(\"" + stmt1.getObject() + "\" ) ");
+		}
+		stb.append("( <"+ stmt2.getSubject() +"> ) ");
+		if(stmt2.getObject().isResource()) {
+			stb.append("( <"+ stmt2.getObject()+"> )} ");
+		} else {
+			stb.append("( \""+ stmt2.getObject()+"\" )} ");
+		}
+		stb.append("{?n1 ?e1 ?n2 .} UNION {?n3 ?e2 ?n1 .}}");
+		
+				
+		List<QuerySolution> results = queryModel(graph, stb.toString());
 		
 		for(QuerySolution solution: results){			
 			Statement s1 = null;
 			RDFNode curNode = solution.get("n1");
 			if(curNode.isResource()) {
-				curNode = solution.getResource("n1");
+				curNode = curNode.asResource();
 				
-				Property e1 = ResourceFactory.createProperty(solution.get("e1").toString());
-				s1 = ResourceFactory.createStatement(curNode.asResource(), e1, solution.get("n3"));
+				RDFNode n2t = solution.get("n2");
+				RDFNode el1 = solution.get("e1");
+				if(n2t!=null && el1!=null) {
+					Property e1 = ResourceFactory.createProperty(el1.toString());
+					s1 = ResourceFactory.createStatement(curNode.asResource(), e1, n2t);
+				}
+				
 			}
-			
-			Property e2 = ResourceFactory.createProperty(solution.get("e2").toString());
-			Statement s2 = ResourceFactory.createStatement(solution.getResource("n3"), e2, curNode);
-			
-			if( !stmt1.equals(s1) && !stmt1.equals(s2) &&
-					!stmt2.equals(s1) && !stmt2.equals(s2)
-					
-					//(s1 != null && !stmt1.equals(s1) && !stmt1.equals(s2)) && //||
-					//(!stmt2.equals(s1) && !stmt2.equals(s2))
-					) {
-				externals.add(curNode);
+			RDFNode el2 = solution.get("e2");
+			RDFNode tn3 = solution.get("n3");
+			Statement s2 = null;
+			if(el2 != null && tn3!= null) {
+				Property e2 = ResourceFactory.createProperty(el2.toString());
+				s2 = ResourceFactory.createStatement(tn3.asResource(), e2, curNode);
 			}
+				
+			
+			if(stmt1.equals(s1) || stmt2.equals(s1) ||stmt1.equals(s2) || stmt2.equals(s2)){
+				continue;
+			} 
+			
+			externals.add(curNode);
 			
 		}		
 		return externals;
 	}
 	
+	/**
+	 * 
+	 * @param graph
+	 * @param sparqlQuery
+	 * @return
+	 */
 	public static List<QuerySolution> queryModel(Model graph, String sparqlQuery) {
 		Query query = QueryFactory.create(sparqlQuery);
 		QueryExecution queryExecution = QueryExecutionFactory.create(query, graph);
@@ -187,109 +241,40 @@ public class DigramHelper {
 		return querySolutionList;
 	}
 	
+	/**
+	 * Updates the occurrences count for each digram
+	 * @param diOccurMap
+	 */
+	private static void updateDigramCount(Map<Digram, Set<DigramOccurence>> diOccurMap) {
+		diOccurMap.forEach((digram,occurrences)->{
+			digram.setNoOfOccurences(occurrences.size());
+		});
+	}
+	
+	/**
+	 * 
+	 * @param occurrences
+	 * @return
+	 */
+	public static Map<Digram, Set<DigramOccurence>> mapDigrams(Set<DigramOccurence> occurrences) {
+		Map<Digram, Set<DigramOccurence>> digramMap = new HashMap<Digram, Set<DigramOccurence>>();
+		for(DigramOccurence occurrence : occurrences) {
+			Digram curDigram = occurrence.getDigram();
+			if(digramMap.containsKey(curDigram)) {
+				digramMap.get(curDigram).add(occurrence);
+			} else {
+				Set<DigramOccurence> newOccur = new HashSet<DigramOccurence>();
+				newOccur.add(occurrence);
+				digramMap.put(curDigram, newOccur);
+			}
+		}
+		updateDigramCount(digramMap);
+		return digramMap;
+	}
+	
 	public static Set<DigramOccurence> findDigrams(Model graph, Digram dig) {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
-	
-	
-// ******* restarting it, to be deleted ********
-	
-//	/**
-//	 * finds all existing digrams in the model by searching for sets of 2 statements 
-//	 * that share at least one common node
-//	 * @param graph
-//	 * @return
-//	 */
-//	public static Set<Digram> findDigrams(Model graph) {
-//		StmtIterator stmtIterator = graph.listStatements();
-//		while(stmtIterator.hasNext()) {
-//			Statement curStmt = stmtIterator.next();
-//			// for method ambiguity problems
-//			Property nullProp = null;
-//			Resource nullRes = null;
-//			
-//			//find statements with common nodes
-//			Resource curSubject = curStmt.getSubject();
-//			StmtIterator possibleDigramsIter = graph.listStatements(nullRes, nullProp, curSubject);
-//			StmtIterator finalIter = null;
-//			if(possibleDigramsIter != null) {
-//				
-//			}
-//			
-//			RDFNode curObject = curStmt.getObject();
-//			if(curObject.isResource()) {
-//				StmtIterator anotherPossDigramsIter = graph.listStatements(curObject.asResource(), nullProp, nullRes);
-//				if(possibleDigramsIter != null) {
-//					finalIter = (StmtIterator) Iterators.concat(possibleDigramsIter, anotherPossDigramsIter);
-//				}
-//			}
-//			
-//			createDigrams(curStmt, curSubject, finalIter);
-//		}		
-//		return null;
-//	}
-//	
-//	private static void createDigrams(Statement statement, Resource commonNode, StmtIterator iterator) {
-//		Property edgeLabel1 = null;
-//		Property edgeLabel2 = null;
-//		boolean isSubject = false;
-//		
-//		Set<RDFNode> externals = new HashSet<RDFNode>();
-//		
-//		if(statement.getSubject().equals(commonNode)) {
-//			isSubject = true;
-//		}
-//		
-//		while(iterator.hasNext()) {
-//			Set<Integer> ext = new HashSet<Integer>();
-//			Statement curStmt = iterator.next(); 
-//			// 
-//			if(isSubject) {
-//				edgeLabel1 = statement.getPredicate();
-//				edgeLabel2 = curStmt.getPredicate();
-//				externals.add(statement.getObject());
-//				externals.add(curStmt.getSubject());
-//			} else {
-//				edgeLabel2 = statement.getPredicate();
-//				edgeLabel1 = curStmt.getPredicate();
-//				externals.add(curStmt.getObject());
-//				externals.add(statement.getSubject());
-//			}
-//			
-//			
-//			Digram digram = new Digram(edgeLabel1, edgeLabel2, getExternalIndexes(statement, curStmt, externals));
-//		}
-//	}
-//	
-//	/**
-//	 * Searches for sets of 2 triples that share one common node
-//	 * @param graph
-//	 * @param digrams
-//	 * @return
-//	 */
-//	public static Set<DigramOccurence> findOccurrences (Model graph, Set<Digram> digrams){
-//		StmtIterator stmtIter = graph.listStatements();
-//		Set<RDFNode> visitedNodes = new HashSet<RDFNode>();
-//		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
-//		while(stmtIter.hasNext()) {
-//			Statement curStmt = stmtIter.next();
-//			Resource subject = curStmt.getSubject();
-//			RDFNode object = curStmt.getObject();
-//			if(!visitedNodes.contains(subject)) {
-//				occurrences.addAll(findOthers(graph, subject, curStmt));
-//				visitedNodes.add(subject);
-//			}
-//				
-//			if(!visitedNodes.contains(object)) {
-//				occurrences.addAll(findOthers(graph, object, curStmt));
-//				visitedNodes.add(object);
-//			}
-//			
-//		}
-//		return occurrences;	
-//		
-//	}
 	
 }

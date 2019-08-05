@@ -2,6 +2,7 @@ package org.dice_group.grp.grammar.digram;
 
 import static org.junit.Assert.*;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.jena.rdf.model.Model;
@@ -15,10 +16,13 @@ public class DigramTest {
 		Model graph = ModelFactory.createDefaultModel();
 		graph.read("test.ttl");
 		
-		Set<Digram> digrams = DigramHelper.findDigrams(graph);
 		
-		for(Digram digram: digrams) {
-			System.out.println(digram.getEdgeLabel1() +" - "+ digram.getEdgeLabel2() +" - " + digram.getExternalIndexes());
+		Set<DigramOccurence> occurrences = DigramHelper.findDigramOccurrences(graph);
+		Set<Digram> digrams = DigramHelper.getDigrams(occurrences);
+		Map<Digram, Set<DigramOccurence>> map = DigramHelper.mapDigrams(occurrences);
+		
+		for(DigramOccurence occur: occurrences) {
+			System.out.println(occur.toString());
 		}
 
 			
