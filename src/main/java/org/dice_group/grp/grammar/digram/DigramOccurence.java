@@ -1,5 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
@@ -46,14 +48,33 @@ public class DigramOccurence extends Digram {
 	public Digram getDigram() {
 		return new Digram(this.getEdgeLabel1(), this.getEdgeLabel2(), this.getExternalIndexes());
 	}
-
 	
-	@Override
-	public int hashCode() {
-		return super.hashCode();
+	/**
+	 * Returns true when there are no nodes in common 
+	 * are same
+	 * @param occurrences
+	 * @return
+	 */
+	public boolean isNonOverlapping(Set<DigramOccurence> occurrences) {
+		Set<RDFNode> allNodes = new HashSet<RDFNode>();
+		addNodes(allNodes, e1);
+		addNodes(allNodes, e2);
+		
+		Set<RDFNode> setNodes = new HashSet<RDFNode>();
+		occurrences.forEach((curOccur)->{
+			addNodes(setNodes, curOccur.getEdge1());
+			addNodes(setNodes, curOccur.getEdge1());
+		});
+
+		return Collections.disjoint(allNodes, setNodes);
 	}
-
-
+	
+	private void addNodes(Set<RDFNode> internalNodes, Statement s1) {
+		internalNodes.add(s1.getSubject());
+		internalNodes.add(s1.getObject());
+	}
+	
+	
 	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof DigramOccurence) {

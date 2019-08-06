@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,16 +26,19 @@ public class DigramHelper {
 			"?n1 ?e1 ?n2 .\n" + 
 			"\n" + 
 			"?n2 ?e2 ?n3 .\n" + 
+			"\n" + 
 			"} ";
 	private static final String CASE_2 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
 			"?n1 ?e1 ?n2 .\n" + 
 			"\n" + 
 			"?n3 ?e2 ?n2 .\n" + 
+			"\n" + 
 			"} ";
 	private static final String CASE_3 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
 			"?n2 ?e1 ?n1 .\n" + 
 			"\n" + 
 			"?n2 ?e2 ?n3 .\n" + 
+			"\n" + 
 			"} ";
 	
 	private static final String [] CASES = {
@@ -99,6 +103,7 @@ public class DigramHelper {
 	 * @return
 	 */
 	public static Set<DigramOccurence> findDigramOccurrences(Model graph) {		
+		// only disjoint occurrences are added
 		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
 		
 		for(int i = 0; i< CASES.length; i++) {
@@ -139,25 +144,18 @@ public class DigramHelper {
 			        //it's only an occurrence if it has at least one external node
 			        if(!externals.isEmpty()) {
 			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals);
-						occurrences.add(occurrence);
+			        	if(occurrences.isEmpty()) {
+			        		occurrences.add(occurrence);
+			        	}
+			        	if(occurrence.isNonOverlapping(occurrences)) {
+		        			occurrences.add(occurrence);
+		        			break;
+		        		}
 			        }
 				}
 		    }
 		}
 		return occurrences;
-	}
-	
-	/**
-	 * 
-	 * @param occurrences
-	 * @return
-	 */
-	public static Set<Digram> getDigrams (Set<DigramOccurence> occurrences){
-		Set<Digram> digrams = new HashSet<Digram>();
-		occurrences.forEach(occur->{
-			digrams.add(occur.getDigram());
-		});		
-		return digrams;
 	}
 	
 	/**
@@ -272,9 +270,42 @@ public class DigramHelper {
 		return digramMap;
 	}
 	
+	/**
+	 * 
+	 * @param occurrences
+	 * @return
+	 */
+	public static Set<Digram> getDigrams (Map<Digram, Set<DigramOccurence>> map){
+		return map.keySet();
+	}
+	
+	
 	public static Set<DigramOccurence> findDigrams(Model graph, Digram dig) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	/**
+	 * Sort the digrams by most to least frequent
+	 * @param digrams
+	 * @return
+	 */
+	public static List<Digram> sortDigrambyFrequence(Set<Digram> digrams) {
+		List<Digram> sortedDigrams = new ArrayList<Digram>();
+		sortedDigrams.addAll(digrams);
+		sortedDigrams.sort(new Comparator<Digram>() {
+			@Override
+			public int compare(Digram dig0, Digram dig1) {
+				if(dig0.getNoOfOccurences() > dig1.getNoOfOccurences()) {
+					return -1;
+				}
+				if(dig0.getNoOfOccurences() < dig1.getNoOfOccurences()) {
+					return 1;
+				}
+				return 0;
+			}
+		});
+		return sortedDigrams;
 	}
 	
 }

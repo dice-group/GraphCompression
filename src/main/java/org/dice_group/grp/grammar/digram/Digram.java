@@ -119,5 +119,14 @@ public class Digram {
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append(edgeLabel1).append(" - ").append(edgeLabel2).append(" - ").append(external).append(" - ").append(occurences);
+		return builder.toString();
+	}
+	
+	
 	
 }
