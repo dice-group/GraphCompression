@@ -127,19 +127,24 @@ public class DigramHelper {
 		        
 		        Statement stmt1 = null;
 		        Statement stmt2 = null;
-		        if(CASES[i].equals(CASE_1)) {
-		        	stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
-		        	stmt2 = ResourceFactory.createStatement(n2.asResource(), e2, n3);
-		        }
-		        
-				if(CASES[i].equals(CASE_2)) {
-					stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
-		        	stmt2 = ResourceFactory.createStatement(n3.asResource(), e2, n2);
-				}
-				
-				if(CASES[i].equals(CASE_3)) {
-					stmt1 = ResourceFactory.createStatement(n2.asResource(), e1, n1);
-		        	stmt2 = ResourceFactory.createStatement(n2.asResource(), e2, n3);
+		        switch (CASES[i]) {
+		        	case CASE_1:
+		        		stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
+			        	stmt2 = ResourceFactory.createStatement(n2.asResource(), e2, n3);
+			        	break;
+					
+					case CASE_2:
+						stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
+			        	stmt2 = ResourceFactory.createStatement(n3.asResource(), e2, n2);
+					break;
+					
+					case CASE_3:
+						stmt1 = ResourceFactory.createStatement(n2.asResource(), e1, n1);
+			        	stmt2 = ResourceFactory.createStatement(n2.asResource(), e2, n3);
+					break;
+
+				default:
+					break;
 				}
 				
 				if(!stmt1.equals(stmt2)) {
@@ -183,11 +188,11 @@ public class DigramHelper {
 	 */
 	public static Set<RDFNode> findExternals(List<RDFNode> nodes, Statement stmt1, Statement stmt2, Model graph, String digramCase){
 		Set<RDFNode> externals = new HashSet<RDFNode>();
-		String n1 = nodes.get(0).toString();
-		String n2 = nodes.get(1).toString();
-		String n3 = nodes.get(2).toString();
-		String e1 = nodes.get(3).toString();
-		String e2 = nodes.get(4).toString();
+		String n1 = getNodeName(nodes.get(0));
+		String n2 = getNodeName(nodes.get(1));
+		String n3 = getNodeName(nodes.get(2));
+		String e1 = getNodeName(nodes.get(3));
+		String e2 = getNodeName(nodes.get(4));
 		
 		StringBuilder n1Query = new StringBuilder();
 		StringBuilder n2Query = new StringBuilder();
@@ -196,75 +201,67 @@ public class DigramHelper {
 		switch (digramCase) {
 			// n1 - e1 - n2 - e2 - n3
 			case CASE_1:
-				n3 = getNodeName(nodes.get(2));
 				
 				// n1 
-				n1Query.append("SELECT * WHERE { { <");
-				n1Query.append(n1).append("> ?p ?o ."); 
-						//MINUS {<").append(n1).append("> <").append(e1).append("> <").append(n2).append("> . }");
-				n1Query.append("} UNION { ?s ?p1 <").append(n1).append("> .}} LIMIT 2");
-			
+				n1Query.append("ASK WHERE { { ").append(n1).append(" ?p ?n . "); 
+				n1Query.append("MINUS { ").append(n1).append(" ?q ?m .");
+				n1Query.append(" FILTER (?n = ?m && ").append(n2).append(" = ?m && ?q = ?p && ?q = ").append(e1).append(") ");
+				n1Query.append("} } UNION { ?s ?p1 ").append(n1).append(" . } }");
+				
 				//n2
-				n2Query.append("SELECT * WHERE { { <");
-				n2Query.append(n2).append("> ?p ?o . ");
-				//MINUS { <").append(n2).append("> <").append(e2).append("> ").append(n3).append(" . }");
-				n2Query.append("} UNION { ?s ?p1 <").append(n2).append("> . ");
-				//MINUS { <").append(n1).append("> <").append(e1).append("> <").append(n2).append("> . } ");
-				n2Query.append("}} LIMIT 2");
+				n2Query.append("ASK WHERE { { { "); 
+				n2Query.append(n2).append(" ?p ?n .");
+				n2Query.append(" MINUS { ").append(n2).append(" ?q ?m .");
+				n2Query.append(" FILTER (?n = ?m && ").append(n3).append(" = ?m && ?q = ?p && ?q = ").append(e2).append(") } }");
+				n2Query.append(" } UNION { ?s ?p1 ").append(n2).append(" .");
+				n2Query.append(" MINUS { ?a ?b ").append(n2).append(" . FILTER (?s = ?a && ");
+				n2Query.append(n1).append(" = ?a && ?b = ?p1 && ?b = ").append(e1).append(") } } }");
 				
 				//n3
-				n3Query.append("SELECT * WHERE { {");
-				n3Query.append(n3).append(" ?p ?o .");
-				n3Query.append("} UNION { ?s ?p1 ").append(n3).append(". ");
-				//MINUS {<").append(n2).append("> <").append(e2).append("> ").append(n3).append(" . } "
-				n3Query.append("}} LIMIT 2");
+				n3Query.append("ASK WHERE { { ").append(n3).append(" ?p ?n . } UNION { ?s ?p1 ").append(n3).append(" . MINUS { ?a ?b ");
+				n3Query.append(n3).append(" . FILTER (?s = ?a && ");
+				n3Query.append(n2).append(" = ?a && ?b = ?p1 && ?b = ").append(e2).append(") } } }");
 				
 				break;
 			// n1 - e1 - n2 - n3 - e2 -n2
 			case CASE_2:
-				n2 = getNodeName(nodes.get(1));
 				
 				// n1 
-				n1Query.append("SELECT * WHERE { { (<");
-				n1Query.append(n1).append("> ?p ?o) "); //MINUS {(<").append(n1).append("> <").append(e1).append("> ").append(n2).append(")}");
-				n1Query.append("} UNION { (?s ?p1 <").append(n1).append(">)}} LIMIT 2");
+				n1Query.append("ASK WHERE { {").append(n1).append(" ?p ?n . "); 
+				n1Query.append("MINUS { ").append(n1).append(" ?q ?m .");
+				n1Query.append("FILTER (?n = ?m && ").append(n2).append(" = ?m && ?q = ?p && ?q = ").append(e1).append(")");
+				n1Query.append("}} UNION { ?s ?p1 ").append(n1).append(" .}}");
 				
 				// n2
-				n2Query.append("SELECT * WHERE { {(");
-				n2Query.append(n2).append(" ?p ?o) ");//MINUS {(<").append(n1).append("> <").append(e2).append("> <").append(n3).append("> )}");
-				n2Query.append("} UNION { (?s ?p1 ").append(n2).append(") MINUS {(<").append(n3).append("> <").append(e2).append("> ")
-				.append(n2).append(")} }} LIMIT 2");
+				n2Query.append("ASK WHERE { {");
+				n2Query.append(n2).append(" ?p ?n . }").append(" UNION { ?s ?p1 ").append(n2).append(" . MINUS { ?a ?b ").append(n2);
+				n2Query.append(" . FILTER (?s = ?a && ").append(n1).append(" =?a && ?b=?p1 && ?b=").append(e1).append(")");
+				n2Query.append(" FILTER (?s = ?a && ").append(n3).append(" =?a && ?b=?p1 && ?b=").append(e2).append(") } } }");
 				
 				// n3
-				n3Query.append("SELECT * WHERE { { (<");
-				n3Query.append(n3).append("> ?p ?o)");
-				n3Query.append("} UNION { (?s ?p1 <").append(n3).append(">) ");//MINUS {(<").append(n3).append("> <").append(e2).append("> ").append(n2).append(")} )"
-				n3Query.append("}} LIMIT 2");
-								
+				n3Query.append("ASK WHERE { {").append(n3).append(" ?p ?n . "); 
+				n3Query.append("MINUS { ").append(n3).append(" ?q ?m . FILTER (?n = ?m && ");
+				n3Query.append(n2).append(" =?m && ?q=?p && ?q=").append(e2).append(") }} UNION { ?s ?p1 ");
+				n3Query.append(n3).append(" .}}");		
 				break;
 			// n2 - e1 - n1 - n2 - e2 - n3
 			case CASE_3:
-				n1 = getNodeName(nodes.get(0));
-				n3 = getNodeName(nodes.get(2));
 				
 				// n1 
-				n1Query.append("SELECT * WHERE { { (");
-				n1Query.append(n1).append(" ?p ?o) ");
-				n1Query.append("} UNION { (?s ?p1 ").append(n1).append(") ");//MINUS {(<").append(n2).append("> <").append(e1).append("> ").append(n1).append(")} ")
-				n1Query.append("}} LIMIT 2");
+				n1Query.append("ASK WHERE { { ").append(n1).append(" ?p ?n . } UNION { ?s ?p1 ");
+				n1Query.append(n1).append(" .MINUS { ?a ?b ").append(n1).append(" . FILTER (?s = ?a && ").append(n2).append(" =?a && ?b=?p1 && ?b=");
+				n1Query.append(e1).append(") } } }");
 				
 				// n2
-				n2Query.append("SELECT * WHERE { { (<");
-				n2Query.append(n2).append("> ?p ?o) ");//MINUS {(<").append(n2).append("> <").append(e1).append("> ").append(n1).append(")}");
-				//n2Query.append(" MINUS {(<").append(n2).append("> <").append(e2).append("> ").append(n3).append(")};
-				n2Query.append("} UNION { (?s ?p1 <").append(n2).append(">) }} LIMIT 2");
+				n2Query.append("ASK WHERE { {").append(n2).append(" ?p ?n . MINUS {")
+					.append(n2).append(" ?q ?m . FILTER (?n = ?m && ").append(n1).append(" =?m && ?b=?p && ?q=").append(e1)
+					.append(") FILTER (?n = ?m && ").append(n3).append(" =?m && ?b=?p && ?q=").append(e2).append(") } } UNION { ?s ?p1 ")
+					.append(n2).append(".} }");
 				
 				// n3
-				n3Query.append("SELECT * WHERE { {(");
-				n3Query.append(n3).append(" ?p ?o) ");
-				n3Query.append("} UNION { (?s ?p1 ").append(n3).append(") ");//MINUS {(").append(n3).append(" <").append(e2).append("> <").append(n2).append(">)} "
-				n3Query.append("}} LIMIT 2");
-				
+				n3Query.append("ASK WHERE { { ") 
+						.append(n3).append(" ?p ?n . } UNION {  ?s ?p1 ").append(n3).append(" . MINUS { ?a ?b ")
+						.append(n3).append(" . FILTER (?s = ?a && ").append(n2).append(" =?a && ?b=?p1 && ?b=").append(e2).append(") } } }");		
 				break;
 
 			default:
@@ -276,54 +273,26 @@ public class DigramHelper {
 		map.put(n2Query.toString(), nodes.get(1));
 		map.put(n3Query.toString(), nodes.get(2));
 		
-		Iterator<String> keyIterator = map.keySet().iterator();
-		while (keyIterator.hasNext()) {
-			String curQuery = keyIterator.next();
+		for(String curQuery: map.keySet()) {
 			QueryExecution queryExecution = queryModel(graph, curQuery);
-			List<QuerySolution> results = selectModel(queryExecution);
-			for (QuerySolution result: results) {
-				RDFNode n1Acq = result.get("n1");
-				RDFNode n2Acq = result.get("n2");
-				RDFNode n3Acq = result.get("n3");
-				RDFNode e1Acq = result.get("e1");
-				RDFNode e2Acq = result.get("e2");
-				
-				// n1 e1 n2
-				if(n1Acq != null && e1Acq != null && n2Acq != null && 
-						n1Acq.toString().equals(n1) && e1Acq.toString().equals(e1) && n2Acq.toString().equals(n2)) {
-					continue;
-				}
-				// n2 e2 n3
-				if(n2Acq != null && e2Acq != null && n3Acq != null &&
-						n2Acq.toString().equals(n2) && e2Acq.toString().equals(e2) && n3Acq.toString().equals(n3)) {
-					continue;
-				}
-				// n1 e2 n3
-				if(n1Acq != null && e2Acq != null && n3Acq != null &&
-						n1Acq.toString().equals(n1) && e2Acq.toString().equals(e2) && n3Acq.toString().equals(n3)) {
-					continue;
-				}
-				// n3 e2 n2
-				if(n3Acq != null && e2Acq != null && n2Acq != null &&
-						n3Acq.toString().equals(n3) && e2Acq.toString().equals(e2) && n2Acq.toString().equals(n2)) {
-					continue;
-				}
-				// n3 e2 n2
-				if(n3Acq != null && e2Acq != null && n2Acq != null &&
-						n3Acq.toString().equals(n3) && e2Acq.toString().equals(e2) && n2Acq.toString().equals(n2)) {
-					continue;
-				}
+			
+			boolean isExternal = askModel(queryExecution);
+			if(isExternal) {
 				externals.add(map.get(curQuery));
 			}
 		}
+		
 		return externals;
 	}
 	
-	
-	
+	/**
+	 * Returns a string encapsulated with < > in case of an URI resource and " " in case of a literal
+	 * @param node
+	 * @return
+	 */
 	private static String getNodeName(RDFNode node) {
 		String nodeStr = "";
-		if(node.isResource()) {
+		if(node.isURIResource()) {
 			nodeStr = new StringBuilder("<").append(node.toString()).append(">").toString();
 		} else {
 			nodeStr = new StringBuilder("\"").append(node.toString()).append("\"").toString();
@@ -343,7 +312,7 @@ public class DigramHelper {
 		return queryExecution;
 	}
 	
-	private static List<QuerySolution> selectModel (QueryExecution queryExecution) {
+	public static List<QuerySolution> selectModel (QueryExecution queryExecution) {
 		List<QuerySolution> querySolutionList = new ArrayList<QuerySolution>();
 	    ResultSet resultSet = queryExecution.execSelect();
 	    while(resultSet.hasNext()) {
