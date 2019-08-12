@@ -20,10 +20,12 @@ public class DigramTest {
 		Set<Digram> digrams = DigramHelper.getDigrams(map);
 		List<Digram> sortedDigrams = DigramHelper.sortDigrambyFrequence(digrams);
 		
+		System.out.println("Digrams");
 		sortedDigrams.forEach((digram)->{
 			System.out.println(digram.toString());
 		});
 		
+		System.out.println("Occurrences");
 		for(DigramOccurence occur: occurrences) {
 			System.out.println(occur.toString());
 		}

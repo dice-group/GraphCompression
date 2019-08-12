@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -118,13 +117,11 @@ public class DigramHelper {
 			for(QuerySolution solution: results){
 		        
 		        RDFNode n1 = solution.get("n1");
-		        Property e1 = ResourceFactory.createProperty(solution.get("e1").toString());
 		        RDFNode n2 = solution.get("n2");
-		       
+		        RDFNode n3 = solution.get("n3");
+		        Property e1 = ResourceFactory.createProperty(solution.get("e1").toString());
 		        Property e2 = ResourceFactory.createProperty(solution.get("e2").toString());
 		 
-		        RDFNode n3 = solution.get("n3");
-		        
 		        Statement stmt1 = null;
 		        Statement stmt2 = null;
 		        switch (CASES[i]) {
@@ -147,7 +144,7 @@ public class DigramHelper {
 					break;
 				}
 				
-				if(!stmt1.equals(stmt2)) {
+				if(stmt1!= null && stmt2 != null && !stmt1.equals(stmt2)) {
 					List<RDFNode> nodes = new ArrayList<RDFNode>();
 					nodes.add(n1);
 					nodes.add(n2);
@@ -161,8 +158,8 @@ public class DigramHelper {
 //			        digrams.add(digram);
 //			        
 			        // it's only an occurrence if it has at least one external node
-					// maximum of 2 external nodes && externals.size() < 2
-			        if(!externals.isEmpty() ) {
+					// and a maximum of 2 external nodes 
+			        if(!externals.isEmpty() && externals.size()<3) {
 			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals);
 			        	if(occurrences.isEmpty()) {
 			        		occurrences.add(occurrence);
@@ -188,101 +185,47 @@ public class DigramHelper {
 	 */
 	public static Set<RDFNode> findExternals(List<RDFNode> nodes, Statement stmt1, Statement stmt2, Model graph, String digramCase){
 		Set<RDFNode> externals = new HashSet<RDFNode>();
-		String n1 = getNodeName(nodes.get(0));
-		String n2 = getNodeName(nodes.get(1));
-		String n3 = getNodeName(nodes.get(2));
-		String e1 = getNodeName(nodes.get(3));
-		String e2 = getNodeName(nodes.get(4));
+		RDFNode n1 = nodes.get(0);
+		RDFNode n2 = nodes.get(1);
+		RDFNode n3 = nodes.get(2);
 		
-		StringBuilder n1Query = new StringBuilder();
-		StringBuilder n2Query = new StringBuilder();
-		StringBuilder n3Query = new StringBuilder();
+		boolean isN1External = isNodeExternal(getNodeName(n1), 1, graph);
+		boolean isN2External = isNodeExternal(getNodeName(n2), 2, graph);
+		boolean isN3External = isNodeExternal(getNodeName(n3), 1, graph);
 		
-		switch (digramCase) {
-			// n1 - e1 - n2 - e2 - n3
-			case CASE_1:
-				
-				// n1 
-				n1Query.append("ASK WHERE { { ").append(n1).append(" ?p ?n . "); 
-				n1Query.append("MINUS { ").append(n1).append(" ?q ?m .");
-				n1Query.append(" FILTER (?n = ?m && ").append(n2).append(" = ?m && ?q = ?p && ?q = ").append(e1).append(") ");
-				n1Query.append("} } UNION { ?s ?p1 ").append(n1).append(" . } }");
-				
-				//n2
-				n2Query.append("ASK WHERE { { { "); 
-				n2Query.append(n2).append(" ?p ?n .");
-				n2Query.append(" MINUS { ").append(n2).append(" ?q ?m .");
-				n2Query.append(" FILTER (?n = ?m && ").append(n3).append(" = ?m && ?q = ?p && ?q = ").append(e2).append(") } }");
-				n2Query.append(" } UNION { ?s ?p1 ").append(n2).append(" .");
-				n2Query.append(" MINUS { ?a ?b ").append(n2).append(" . FILTER (?s = ?a && ");
-				n2Query.append(n1).append(" = ?a && ?b = ?p1 && ?b = ").append(e1).append(") } } }");
-				
-				//n3
-				n3Query.append("ASK WHERE { { ").append(n3).append(" ?p ?n . } UNION { ?s ?p1 ").append(n3).append(" . MINUS { ?a ?b ");
-				n3Query.append(n3).append(" . FILTER (?s = ?a && ");
-				n3Query.append(n2).append(" = ?a && ?b = ?p1 && ?b = ").append(e2).append(") } } }");
-				
-				break;
-			// n1 - e1 - n2 - n3 - e2 -n2
-			case CASE_2:
-				
-				// n1 
-				n1Query.append("ASK WHERE { {").append(n1).append(" ?p ?n . "); 
-				n1Query.append("MINUS { ").append(n1).append(" ?q ?m .");
-				n1Query.append("FILTER (?n = ?m && ").append(n2).append(" = ?m && ?q = ?p && ?q = ").append(e1).append(")");
-				n1Query.append("}} UNION { ?s ?p1 ").append(n1).append(" .}}");
-				
-				// n2
-				n2Query.append("ASK WHERE { {");
-				n2Query.append(n2).append(" ?p ?n . }").append(" UNION { ?s ?p1 ").append(n2).append(" . MINUS { ?a ?b ").append(n2);
-				n2Query.append(" . FILTER (?s = ?a && ").append(n1).append(" =?a && ?b=?p1 && ?b=").append(e1).append(")");
-				n2Query.append(" FILTER (?s = ?a && ").append(n3).append(" =?a && ?b=?p1 && ?b=").append(e2).append(") } } }");
-				
-				// n3
-				n3Query.append("ASK WHERE { {").append(n3).append(" ?p ?n . "); 
-				n3Query.append("MINUS { ").append(n3).append(" ?q ?m . FILTER (?n = ?m && ");
-				n3Query.append(n2).append(" =?m && ?q=?p && ?q=").append(e2).append(") }} UNION { ?s ?p1 ");
-				n3Query.append(n3).append(" .}}");		
-				break;
-			// n2 - e1 - n1 - n2 - e2 - n3
-			case CASE_3:
-				
-				// n1 
-				n1Query.append("ASK WHERE { { ").append(n1).append(" ?p ?n . } UNION { ?s ?p1 ");
-				n1Query.append(n1).append(" .MINUS { ?a ?b ").append(n1).append(" . FILTER (?s = ?a && ").append(n2).append(" =?a && ?b=?p1 && ?b=");
-				n1Query.append(e1).append(") } } }");
-				
-				// n2
-				n2Query.append("ASK WHERE { {").append(n2).append(" ?p ?n . MINUS {")
-					.append(n2).append(" ?q ?m . FILTER (?n = ?m && ").append(n1).append(" =?m && ?b=?p && ?q=").append(e1)
-					.append(") FILTER (?n = ?m && ").append(n3).append(" =?m && ?b=?p && ?q=").append(e2).append(") } } UNION { ?s ?p1 ")
-					.append(n2).append(".} }");
-				
-				// n3
-				n3Query.append("ASK WHERE { { ") 
-						.append(n3).append(" ?p ?n . } UNION {  ?s ?p1 ").append(n3).append(" . MINUS { ?a ?b ")
-						.append(n3).append(" . FILTER (?s = ?a && ").append(n2).append(" =?a && ?b=?p1 && ?b=").append(e2).append(") } } }");		
-				break;
-
-			default:
-				break;
-		}
+		if(isN1External)
+			externals.add(n1);
 		
-		Map<String, RDFNode> map = new HashMap<String, RDFNode>();
-		map.put(n1Query.toString(), nodes.get(0));
-		map.put(n2Query.toString(), nodes.get(1));
-		map.put(n3Query.toString(), nodes.get(2));
+		if(isN2External)
+			externals.add(n2);
 		
-		for(String curQuery: map.keySet()) {
-			QueryExecution queryExecution = queryModel(graph, curQuery);
-			
-			boolean isExternal = askModel(queryExecution);
-			if(isExternal) {
-				externals.add(map.get(curQuery));
-			}
-		}
+		if(isN3External)
+			externals.add(n3);
 		
 		return externals;
+	}
+	
+	/**
+	 * Returns true if the triple count for a given node is positive
+	 * @param nodeString
+	 * @param diff
+	 * @param graph
+	 * @return
+	 */
+	private static boolean isNodeExternal(String nodeString, int diff, Model graph) {
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT (COUNT(*)-").append(diff).append(" AS ?total) WHERE { { ")
+		.append(nodeString).append(" ?p ?n . } UNION { ?s ?p1 ").append(nodeString).append(" . } }");	
+		
+		QueryExecution queryExecution = queryModel(graph, query.toString());
+		List<QuerySolution> results = selectModel(queryExecution);
+		for(QuerySolution solution: results) {
+			long count = solution.getLiteral("total").getLong();
+			if(count > 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**
@@ -294,8 +237,10 @@ public class DigramHelper {
 		String nodeStr = "";
 		if(node.isURIResource()) {
 			nodeStr = new StringBuilder("<").append(node.toString()).append(">").toString();
-		} else {
+		} else if(node.isLiteral()) {
 			nodeStr = new StringBuilder("\"").append(node.toString()).append("\"").toString();
+		} else {
+			return node.toString();
 		}
 		return nodeStr;
 	}
