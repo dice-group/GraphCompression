@@ -3,13 +3,5 @@
 <urn://s2.d> <urn://p1.d> <urn://o3.d> .
 <urn://s2.d> <urn://p2.d> <urn://o4.d> .
 
-<urn://s1.d> <urn://p3.d> <urn://o1.d> .
-<urn://o1.d> <urn://p4.d> <urn://o2.d> .
-<urn://s2.d> <urn://p3.d> <urn://o3.d> .
-<urn://o3.d> <urn://p4.d> <urn://o4.d> .
-
-<urn://s1.d> <urn://p5.d> <urn://s1.d> .
-<urn://s1.d> <urn://p6.d> <urn://s1.d> .
-
-<urn://s1.d> <urn://p7.d> <urn://o1.d> .
-<urn://o1.d> <urn://p8.d> <urn://o1.d> .
+<urn://s1.d> <urn://p3.d> <urn://s2.d> .
+<urn://o1.d> <urn://p3.d> <urn://o3.d> .

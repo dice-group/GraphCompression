@@ -1,5 +1,8 @@
 package org.dice_group.grp.compression.rdf;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.HashSet;
@@ -31,7 +34,7 @@ public class RDFCompressorTest {
 		
 		
 		replaced.read(new FileInputStream("src/test/resources/replace.nt"), null, "NT");
-		
+		expected.read(new FileInputStream("src/test/resources/repOcc.nt"), null, "NT");
 		System.out.println(replaced);
 		System.out.println("##############");
 		// create all DigramOccurences
@@ -67,7 +70,7 @@ public class RDFCompressorTest {
 		//external2.add(o4);
 		
 		DigramOccurence occ1 = new DigramOccurence(d1, d2, external1);
-		DigramOccurence occ2 = new DigramOccurence(d3, d4, external1);
+		DigramOccurence occ2 = new DigramOccurence(d3, d4, external2);
 		occSet.add(occ1);
 		occSet.add(occ2);
 		
@@ -76,6 +79,22 @@ public class RDFCompressorTest {
 		replaced = c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
 		System.out.println(replaced);
 		System.out.println();
-		//check if the resulting graph is correct
+		/*check if the resulting graph is correct
+		*[urn://o3.d, urn://p4.d, urn://o4.d] 
+		*[urn://s2.d, urn://p3.d, urn://o3.d] 
+		*[urn://s1.d, urn://p6.d, urn://s1.d] 
+		*[urn://s1.d, urn://p5.d, urn://s1.d] 
+		*[urn://s1.d, urn://p3.d, urn://o1.d] 
+		*[urn://s1.d, urn://p7.d, urn://o1.d] 
+		*[urn://s1.d, :n0, urn://o1.d] 
+		*[urn://o1.d, urn://p8.d, urn://o1.d] 
+		*[urn://o1.d, urn://p4.d, urn://o2.d]>
+		**
+		**/
+		assertTrue(expected.isIsomorphicWith(replaced));
+		for(Statement stmt : replaced.listStatements().toList()) {
+			assertTrue(expected.contains(stmt));
+		}
+				
 	}
 }
