@@ -14,23 +14,30 @@ public class DigramTest {
 	public void test() {
 		Model graph = ModelFactory.createDefaultModel();
 		graph.read("test.ttl");
-		
+		// finds all occurrences
 		Set<DigramOccurence> occurrences = DigramHelper.findDigramOccurrences(graph);
-		Map<Digram, Set<DigramOccurence>> map = DigramHelper.mapDigrams(occurrences);
-		Set<Digram> digrams = DigramHelper.getDigrams(map);
+		
+		//finds and maps all the non overlapping occurrences
+		Map<Digram, Set<DigramOccurence>> map = DigramHelper.findNonOverOccurrences(occurrences);
+		Set<Digram> digrams = map.keySet();
 		List<Digram> sortedDigrams = DigramHelper.sortDigrambyFrequence(digrams);
 		
-		System.out.println("Digrams");
+		
+		System.out.println("Map");
+		map.forEach((k,v)->{
+			System.out.println("Digram\n"+k);
+			System.out.println("Occurrences:\n"+v);
+		});
+		
+		System.out.println("All Occurrences:");
+		occurrences.forEach((occurrence)->{
+			System.out.println(occurrence.toString());
+		});
+		
+		System.out.println("Sorted Digrams");
 		sortedDigrams.forEach((digram)->{
 			System.out.println(digram.toString());
 		});
-		
-		System.out.println("Occurrences");
-		for(DigramOccurence occur: occurrences) {
-			System.out.println(occur.toString());
-		}
-
-			
 	}
 
 }

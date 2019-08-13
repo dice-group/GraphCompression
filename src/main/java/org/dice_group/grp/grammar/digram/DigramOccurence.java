@@ -44,9 +44,15 @@ public class DigramOccurence extends Digram {
 	public void setExternals(Set<RDFNode> external) {
 		this.external = external;
 	}
+
 	
-	public Digram getDigram() {
-		return new Digram(this.getEdgeLabel1(), this.getEdgeLabel2(), this.getExternalIndexes());
+	public Set<RDFNode> getNodes(){
+		Set<RDFNode> nodes = new HashSet<RDFNode>();
+		nodes.add(getEdge1().getSubject());
+		nodes.add(getEdge2().getObject());
+		nodes.add(getEdge1().getSubject());
+		nodes.add(getEdge2().getObject());
+		return nodes;
 	}
 	
 	/**

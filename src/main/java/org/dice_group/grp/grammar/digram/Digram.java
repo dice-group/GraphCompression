@@ -17,8 +17,6 @@ import org.apache.jena.rdf.model.Resource;
  *
  */
 public class Digram {
-
-	
 	private Resource edgeLabel2;
 	private Resource edgeLabel1;
 	private Set<Integer> external;
@@ -52,7 +50,7 @@ public class Digram {
 	public void setEdgeLabel1(Resource edgeLabel1) {
 		this.edgeLabel1 = edgeLabel1;
 	}
-	
+
 	public boolean isOccurence(DigramOccurence occ) {
 		if(occ.getEdgeLabel1().equals(edgeLabel1) && occ.getEdgeLabel2().equals(edgeLabel2)){			
 			return DigramHelper.getExternalIndexes(occ.getEdge1(), occ.getEdge2(), occ.getExternals()).equals(external);
@@ -80,6 +78,8 @@ public class Digram {
 		this.occurences = occurences;
 	}
 	
+
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -87,7 +87,6 @@ public class Digram {
 		result = prime * result + ((edgeLabel1 == null) ? 0 : edgeLabel1.hashCode());
 		result = prime * result + ((edgeLabel2 == null) ? 0 : edgeLabel2.hashCode());
 		result = prime * result + ((external == null) ? 0 : external.hashCode());
-		result = prime * result + (int) (occurences ^ (occurences >>> 32));
 		return result;
 	}
 
@@ -113,10 +112,7 @@ public class Digram {
 		if (external == null) {
 			if (other.external != null)
 				return false;
-		} else if (!external.equals(other.external))
-			return false;
-		if (occurences != other.occurences)
-			return false;
+		} 
 		return true;
 	}
 

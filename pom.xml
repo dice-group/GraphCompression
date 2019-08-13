@@ -24,7 +24,6 @@
 			<type>pom</type>
 			<version>3.1.0</version>
 		</dependency>
-		
 				<!-- slf4j: Logging API -->
 		<dependency>
 			<groupId>org.slf4j</groupId>

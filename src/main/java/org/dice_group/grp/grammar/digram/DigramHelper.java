@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,32 +22,15 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 
 public class DigramHelper {
-	
-	private static final String CASE_1 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
-			"?n1 ?e1 ?n2 .\n" + 
-			"\n" + 
-			"?n2 ?e2 ?n3 .\n" + 
-			"\n" + 
-			"} ";
-	private static final String CASE_2 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
-			"?n1 ?e1 ?n2 .\n" + 
-			"\n" + 
-			"?n3 ?e2 ?n2 .\n" + 
-			"\n" + 
-			"} ";
-	private static final String CASE_3 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where {\n" + 
-			"?n2 ?e1 ?n1 .\n" + 
-			"\n" + 
-			"?n2 ?e2 ?n3 .\n" + 
-			"\n" + 
-			"} ";
+	private static final String CASE_1 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where { ?n1 ?e1 ?n2 . ?n2 ?e2 ?n3 . } ";
+	private static final String CASE_2 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where { ?n1 ?e1 ?n2 . ?n3 ?e2 ?n2 . } ";
+	private static final String CASE_3 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where { ?n2 ?e1 ?n1 . ?n2 ?e2 ?n3 . } ";
 	
 	private static final String [] CASES = {
 		CASE_1, 
 		CASE_2, 
 		CASE_3	
 	};
-	
 
 	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, Set<RDFNode> externals) {
 		Set<Integer> externalIndex = new HashSet<Integer>();
@@ -90,7 +74,7 @@ public class DigramHelper {
 	}
 
 	/**
-	 * Searches the model for non overlapping occurrences, based on three main patterns:
+	 * Searches the model for ALL occurrences, based on three main patterns:
 	 * Case 1:
 	 * n1 e1 n2*
 	 * n2* e2 n3
@@ -161,18 +145,53 @@ public class DigramHelper {
 					// and a maximum of 2 external nodes 
 			        if(!externals.isEmpty() && externals.size()<3) {
 			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals);
-			        	if(occurrences.isEmpty()) {
-			        		occurrences.add(occurrence);
-			        	}
-			        	if(occurrence.isNonOverlapping(occurrences)) {
-		        			occurrences.add(occurrence);
-		        			break;
-		        		}
+			        	occurrences.add(occurrence);			        	
 			        }
 				}
 		    }
 		}
 		return occurrences;
+	}
+	
+	/**
+	 * Non overlapping occurrences, priority given to the most frequent digrams
+	 * @param occurrences
+	 * @return
+	 */
+	public static Map<Digram, Set<DigramOccurence>> findNonOverOccurrences(Set <DigramOccurence> occurrences){
+		Map<Digram, Set<DigramOccurence>> nonOverlMap = new HashMap<Digram, Set<DigramOccurence>>();
+		Map<Digram, Set<DigramOccurence>> map = DigramHelper.mapDigrams(occurrences);
+		List<Digram> sortedDigrams = DigramHelper.sortDigrambyFrequence(map.keySet());
+		
+		Set<RDFNode> visitedNodes = new HashSet<RDFNode>();
+		
+		for(Digram curDigram: sortedDigrams) {
+			Set<DigramOccurence> digramOccurences = map.getOrDefault(curDigram, new HashSet<DigramOccurence>());
+			for(DigramOccurence curOccurrence: digramOccurences) {
+				Set <RDFNode> nodes = curOccurrence.getNodes();
+
+				// adds the occurrence if there's no nodes in common
+				if(Collections.disjoint(visitedNodes, nodes)) {
+					if(nonOverlMap.get(curDigram) != null)
+						nonOverlMap.get(curDigram).add(curOccurrence);
+					else {
+						Set<DigramOccurence> tempOccur = new HashSet<DigramOccurence>();
+						tempOccur.add(curOccurrence);
+						nonOverlMap.put(curDigram, tempOccur);
+					}
+				}
+				
+				// if empty, add the first occurrence anyways
+				if(nonOverlMap.isEmpty()) {
+					Set<DigramOccurence> tempOccur = new HashSet<DigramOccurence>();
+					tempOccur.add(curOccurrence);
+					nonOverlMap.put(curDigram, tempOccur);
+				}
+				visitedNodes.addAll(nodes);
+			}
+		}
+		updateDigramCount(nonOverlMap);
+		return nonOverlMap;
 	}
 	
 	/**
@@ -185,22 +204,16 @@ public class DigramHelper {
 	 */
 	public static Set<RDFNode> findExternals(List<RDFNode> nodes, Statement stmt1, Statement stmt2, Model graph, String digramCase){
 		Set<RDFNode> externals = new HashSet<RDFNode>();
-		RDFNode n1 = nodes.get(0);
-		RDFNode n2 = nodes.get(1);
-		RDFNode n3 = nodes.get(2);
-		
-		boolean isN1External = isNodeExternal(getNodeName(n1), 1, graph);
-		boolean isN2External = isNodeExternal(getNodeName(n2), 2, graph);
-		boolean isN3External = isNodeExternal(getNodeName(n3), 1, graph);
-		
-		if(isN1External)
-			externals.add(n1);
-		
-		if(isN2External)
-			externals.add(n2);
-		
-		if(isN3External)
-			externals.add(n3);
+		for(RDFNode node: nodes) {
+			int diff = 1;
+			if(node.equals(nodes.get(1))) {
+				diff = 2;
+			} 
+			boolean isNodeExternal = isNodeExternal(getNodeName(node), diff, graph);
+			
+			if(isNodeExternal)
+				externals.add(node);
+		}
 		
 		return externals;
 	}
@@ -246,7 +259,7 @@ public class DigramHelper {
 	}
 	
 	/**
-	 * executes a sparql query for a given model
+	 * creates a sparql query for a local model
 	 * @param graph
 	 * @param sparqlQuery
 	 * @return
@@ -257,6 +270,11 @@ public class DigramHelper {
 		return queryExecution;
 	}
 	
+	/**
+	 * executes a select query
+	 * @param queryExecution
+	 * @return
+	 */
 	public static List<QuerySolution> selectModel (QueryExecution queryExecution) {
 		List<QuerySolution> querySolutionList = new ArrayList<QuerySolution>();
 	    ResultSet resultSet = queryExecution.execSelect();
@@ -265,10 +283,6 @@ public class DigramHelper {
 		}
 		queryExecution.close();	
 		return querySolutionList;
-	}
-	
-	public static boolean askModel(QueryExecution queryExecution) {
-		return queryExecution.execAsk();
 	}
 	
 	/**
@@ -282,14 +296,14 @@ public class DigramHelper {
 	}
 	
 	/**
-	 * 
+	 * Maps all occurrences to its corresponding Digrams
 	 * @param occurrences
 	 * @return
 	 */
 	public static Map<Digram, Set<DigramOccurence>> mapDigrams(Set<DigramOccurence> occurrences) {
 		Map<Digram, Set<DigramOccurence>> digramMap = new HashMap<Digram, Set<DigramOccurence>>();
 		for(DigramOccurence occurrence : occurrences) {
-			Digram curDigram = occurrence.getDigram();
+			Digram curDigram = new Digram(occurrence.getEdgeLabel1(), occurrence.getEdgeLabel2(), occurrence.getExternalIndexes());
 			if(digramMap.containsKey(curDigram)) {
 				digramMap.get(curDigram).add(occurrence);
 			} else {
@@ -301,16 +315,6 @@ public class DigramHelper {
 		updateDigramCount(digramMap);
 		return digramMap;
 	}
-	
-	/**
-	 * 
-	 * @param occurrences
-	 * @return
-	 */
-	public static Set<Digram> getDigrams (Map<Digram, Set<DigramOccurence>> map){
-		return map.keySet();
-	}
-
 
 	/**
 	 * Sort the digrams by most to least frequent
