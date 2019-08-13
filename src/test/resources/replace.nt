@@ -2,6 +2,23 @@
 <urn://s1.d> <urn://p2.d> <urn://o2.d> .
 <urn://s2.d> <urn://p1.d> <urn://o3.d> .
 <urn://s2.d> <urn://p2.d> <urn://o4.d> .
-
 <urn://s1.d> <urn://p3.d> <urn://s2.d> .
 <urn://o1.d> <urn://p3.d> <urn://o3.d> .
+
+
+<urn://s4.d> <urn://p4.d> <urn://s5.d> .
+<urn://s5.d> <urn://p5.d> <urn://s6.d> .
+<urn://s4.d> <urn://p3.d> <urn://s1.d> .
+
+<urn://s7.d> <urn://p6.d> <urn://s8.d> .
+<urn://s8.d> <urn://p7.d> <urn://s9.d> .
+<urn://s7.d> <urn://p3.d> <urn://s1.d> .
+<urn://s9.d> <urn://p3.d> <urn://s1.d> .
+
+<urn://s10.d> <urn://p8.d> <urn://s11.d> .
+<urn://s11.d> <urn://p9.d> <urn://s12.d> .
+<urn://s12.d> <urn://p3.d> <urn://s1.d> .
+
+<urn://s13.d> <urn://p10.d> <urn://s14.d> .
+<urn://s13.d> <urn://p11.d> <urn://s15.d> .
+<urn://s15.d> <urn://p3.d> <urn://s1.d> .
