@@ -1,0 +1,17 @@
+<urn://s1.d> <:n0> <urn://o1.d> .
+<urn://s2.d> <:n0> <urn://o3.d> .
+<urn://s1.d> <urn://p3.d> <urn://s2.d> .
+<urn://o1.d> <urn://p3.d> <urn://o3.d> .
+
+<urn://s4.d> <:n1> <urn://s4.d> .
+<urn://s4.d> <urn://p3.d> <urn://s1.d> .
+
+<urn://s7.d> <:n2> <urn://s9.d> .
+<urn://s7.d> <urn://p3.d> <urn://s1.d> .
+<urn://s9.d> <urn://p3.d> <urn://s1.d> .
+
+<urn://s12.d> <:n3> <urn://s12.d> .
+<urn://s12.d> <urn://p3.d> <urn://s1.d> .
+
+<urn://s15.d> <:n4> <urn://s15.d> .
+<urn://s15.d> <urn://p3.d> <urn://s1.d> .
