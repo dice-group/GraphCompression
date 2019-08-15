@@ -9,17 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QueryExecutionFactory;
-import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
+import org.dice_group.grp.util.RDFHelper;
 
 public class DigramHelper {
 	private static final String CASE_1 = "select ?n1 ?n2 ?n3 ?e1 ?e2 where { ?n1 ?e1 ?n2 . ?n2 ?e2 ?n3 . } ";
@@ -92,12 +89,12 @@ public class DigramHelper {
 	 * @return
 	 */
 	public static Set<DigramOccurence> findDigramOccurrences(Model graph) {		
-		// only disjoint occurrences are added
+		
 		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
 		
 		for(int i = 0; i< CASES.length; i++) {
-			QueryExecution queryExec = queryModel(graph, CASES[i]);
-			List<QuerySolution>  results = selectModel(queryExec);
+			QueryExecution queryExec = RDFHelper.queryModel(graph, CASES[i]);
+			List<QuerySolution>  results = RDFHelper.selectModel(queryExec);
 			for(QuerySolution solution: results){
 		        
 		        RDFNode n1 = solution.get("n1");
@@ -137,12 +134,8 @@ public class DigramHelper {
 					nodes.add(e2);
 					
 					Set<RDFNode> externals = findExternals(nodes, stmt1, stmt2, graph, CASES[i]);
-//					
-//			        Digram digram = new Digram(e1, e2, getExternalIndexes(stmt1, stmt2, externals));
-//			        digrams.add(digram);
-//			        
-			        // it's only an occurrence if it has at least one external node
-					// and a maximum of 2 external nodes 
+
+			        // it's only an occurrence if it has at least one external node and a maximum of 2 external nodes 
 			        if(!externals.isEmpty() && externals.size()<3) {
 			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals);
 			        	occurrences.add(occurrence);			        	
@@ -209,7 +202,7 @@ public class DigramHelper {
 			if(node.equals(nodes.get(1))) {
 				diff = 2;
 			} 
-			boolean isNodeExternal = isNodeExternal(getNodeName(node), diff, graph);
+			boolean isNodeExternal = isNodeExternal(RDFHelper.formatNode(node), diff, graph);
 			
 			if(isNodeExternal)
 				externals.add(node);
@@ -230,8 +223,8 @@ public class DigramHelper {
 		query.append("SELECT (COUNT(*)-").append(diff).append(" AS ?total) WHERE { { ")
 		.append(nodeString).append(" ?p ?n . } UNION { ?s ?p1 ").append(nodeString).append(" . } }");	
 		
-		QueryExecution queryExecution = queryModel(graph, query.toString());
-		List<QuerySolution> results = selectModel(queryExecution);
+		QueryExecution queryExecution = RDFHelper.queryModel(graph, query.toString());
+		List<QuerySolution> results = RDFHelper.selectModel(queryExecution);
 		for(QuerySolution solution: results) {
 			long count = solution.getLiteral("total").getLong();
 			if(count > 0) {
@@ -241,49 +234,7 @@ public class DigramHelper {
 		return false;
 	}
 	
-	/**
-	 * Returns a string encapsulated with < > in case of an URI resource and " " in case of a literal
-	 * @param node
-	 * @return
-	 */
-	private static String getNodeName(RDFNode node) {
-		String nodeStr = "";
-		if(node.isURIResource()) {
-			nodeStr = new StringBuilder("<").append(node.toString()).append(">").toString();
-		} else if(node.isLiteral()) {
-			nodeStr = new StringBuilder("\"").append(node.toString()).append("\"").toString();
-		} else {
-			return node.toString();
-		}
-		return nodeStr;
-	}
 	
-	/**
-	 * creates a sparql query for a local model
-	 * @param graph
-	 * @param sparqlQuery
-	 * @return
-	 */
-	public static QueryExecution queryModel(Model graph, String sparqlQuery) {
-		Query query = QueryFactory.create(sparqlQuery);
-		QueryExecution queryExecution = QueryExecutionFactory.create(query, graph);
-		return queryExecution;
-	}
-	
-	/**
-	 * executes a select query
-	 * @param queryExecution
-	 * @return
-	 */
-	public static List<QuerySolution> selectModel (QueryExecution queryExecution) {
-		List<QuerySolution> querySolutionList = new ArrayList<QuerySolution>();
-	    ResultSet resultSet = queryExecution.execSelect();
-	    while(resultSet.hasNext()) {
-			querySolutionList.add(resultSet.next());
-		}
-		queryExecution.close();	
-		return querySolutionList;
-	}
 	
 	/**
 	 * Updates the occurrences count for each digram

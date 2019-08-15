@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
 
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.jena.rdf.model.Resource;
@@ -92,28 +93,25 @@ public class Digram {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Digram other = (Digram) obj;
-		if (edgeLabel1 == null) {
-			if (other.edgeLabel1 != null)
+		if(obj instanceof Digram) {
+			Digram other = (Digram) obj;
+			checkForNull(this);
+			checkForNull(other);
+			if(!edgeLabel1.equals(other.edgeLabel1)|| !edgeLabel2.equals(other.edgeLabel2) || !external.equals(other.external))
 				return false;
-		} else if (!edgeLabel1.equals(other.edgeLabel1))
-			return false;
-		if (edgeLabel2 == null) {
-			if (other.edgeLabel2 != null)
-				return false;
-		} else if (!edgeLabel2.equals(other.edgeLabel2))
-			return false;
-		if (external == null) {
-			if (other.external != null)
-				return false;
-		} 
+		}
 		return true;
+	}
+	
+	/**
+	 * 
+	 * @param digram
+	 */
+	private void checkForNull(Digram digram) {
+		String errorMsg = "None of the attributes can be null!";
+		Objects.requireNonNull(digram.edgeLabel1, errorMsg);
+		Objects.requireNonNull(digram.edgeLabel2, errorMsg);
+		Objects.requireNonNull(digram.external, errorMsg);
 	}
 
 	@Override
