@@ -3,7 +3,6 @@ package org.dice_group.grp.compression.rdf;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +39,11 @@ public class RDFCompressor {
 	
 	private Grammar createGrammar(Model graph, Map<Long, String> dict) {
 		Grammar grammar = new Grammar(graph);
-		List<Digram> frequenceList = new ArrayList<Digram>();
-		Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findDigramsOcc(graph, frequenceList);
+		//List<Digram> frequenceList = new ArrayList<Digram>();
+		//Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findDigramsOcc(graph, frequenceList);
+		Set<DigramOccurence> occurrences = DigramHelper.findDigramOccurrences(graph);
+		Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findNonOverOccurrences(occurrences);
+		List<Digram> frequenceList = DigramHelper.sortDigrambyFrequence(digrams.keySet());
 		while(frequenceList.size()>0) {
 			Digram mfd = frequenceList.get(0);
 			if(mfd.getNoOfOccurences()<=1) {

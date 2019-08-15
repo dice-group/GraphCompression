@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
 
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.jena.rdf.model.Resource;
@@ -17,8 +18,6 @@ import org.apache.jena.rdf.model.Resource;
  *
  */
 public class Digram {
-
-	
 	private Resource edgeLabel2;
 	private Resource edgeLabel1;
 	private Set<Integer> external;
@@ -52,7 +51,7 @@ public class Digram {
 	public void setEdgeLabel1(Resource edgeLabel1) {
 		this.edgeLabel1 = edgeLabel1;
 	}
-	
+
 	public boolean isOccurence(DigramOccurence occ) {
 		if(occ.getEdgeLabel1().equals(edgeLabel1) && occ.getEdgeLabel2().equals(edgeLabel2)){			
 			return DigramHelper.getExternalIndexes(occ.getEdge1(), occ.getEdge2(), occ.getExternals()).equals(external);
@@ -63,8 +62,6 @@ public class Digram {
 		}
 		return false;
 	}
-	
-	
 
 	public Set<Integer> getExternalIndexes() {
 		return external;
@@ -81,5 +78,49 @@ public class Digram {
 	public void setNoOfOccurences(long occurences) {
 		this.occurences = occurences;
 	}
+	
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((edgeLabel1 == null) ? 0 : edgeLabel1.hashCode());
+		result = prime * result + ((edgeLabel2 == null) ? 0 : edgeLabel2.hashCode());
+		result = prime * result + ((external == null) ? 0 : external.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof Digram) {
+			Digram other = (Digram) obj;
+			checkForNull(this);
+			checkForNull(other);
+			if(!edgeLabel1.equals(other.edgeLabel1)|| !edgeLabel2.equals(other.edgeLabel2) || !external.equals(other.external))
+				return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * 
+	 * @param digram
+	 */
+	private void checkForNull(Digram digram) {
+		String errorMsg = "None of the attributes can be null!";
+		Objects.requireNonNull(digram.edgeLabel1, errorMsg);
+		Objects.requireNonNull(digram.edgeLabel2, errorMsg);
+		Objects.requireNonNull(digram.external, errorMsg);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append(edgeLabel1).append(" - ").append(edgeLabel2).append(" - ").append(external).append(" - ").append(occurences);
+		return builder.toString();
+	}
+	
+	
 	
 }
