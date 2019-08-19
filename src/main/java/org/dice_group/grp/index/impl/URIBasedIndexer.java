@@ -26,6 +26,10 @@ import org.rdfhdt.hdtjena.NodeDictionary;
  */
 public class URIBasedIndexer implements Indexer {
 
+	public static final String SUBJECT_PREFIX = ":s";
+	public static final String OBJECT_PREFIX = ":o";
+	public static final String PROPERTY_PREFIX = ":p";
+	
 	private TempDictionary tmpDict;
 	private NodeDictionary nodeDict; 
 
@@ -52,9 +56,9 @@ public class URIBasedIndexer implements Indexer {
 		dict.load(tmpDict, listener);
 		for(Statement stmt : stmts) {
 			//TODO does not work like that
-			String s = ":s"+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
-			String o = ":o"+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.OBJECT);
-			String p = ":p"+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
+			String s = SUBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
+			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.OBJECT);
+			String p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
 			indexedGraph.add(ResourceFactory.createResource(s), ResourceFactory.createProperty(p),
 					ResourceFactory.createResource(o));
 			graph.remove(stmt);
