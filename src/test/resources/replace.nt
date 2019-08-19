@@ -5,7 +5,6 @@
 <urn://s1.d> <urn://p3.d> <urn://s2.d> .
 <urn://o1.d> <urn://p3.d> <urn://o3.d> .
 
-
 <urn://s4.d> <urn://p4.d> <urn://s5.d> .
 <urn://s5.d> <urn://p5.d> <urn://s6.d> .
 <urn://s4.d> <urn://p3.d> <urn://s1.d> .
