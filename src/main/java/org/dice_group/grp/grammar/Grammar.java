@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.jena.rdf.model.Model;
+import org.dice_group.grp.grammar.digram.Digram;
 
 public class Grammar {
 
@@ -33,6 +34,10 @@ public class Grammar {
 	
 	public Model getStart() {
 		return this.rules.get("S");
+	}
+
+	public void addRule(String lhs,  Digram rhs) {
+		//this.rules.put(lhs, rhs);
 	}
 	
 	public void addRule(String lhs,  Model rhs) {

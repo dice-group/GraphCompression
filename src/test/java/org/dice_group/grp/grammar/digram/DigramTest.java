@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,31 +90,31 @@ public class DigramTest {
 	private Set<DigramOccurence> buildPossibleSet() {
 		Set<DigramOccurence> possibleOccurrences = new HashSet<>();
 	
-		Set<RDFNode> fExternal = new HashSet<RDFNode>();
+		List<RDFNode> fExternal = new LinkedList<RDFNode>();
 		fExternal.add(KENTUCKY);
 		addOccurrence(possibleOccurrences, 
 				ResourceFactory.createStatement(KENTUCKY, RDF.type, SCHEMA_PLACE), 
 				ResourceFactory.createStatement(ALABAMA, RDF.type, SCHEMA_PLACE), fExternal);
 		
-		Set<RDFNode> sExternal = new HashSet<RDFNode>();
+		List<RDFNode> sExternal = new LinkedList<RDFNode>();
 		sExternal.add(KENTUCKY);
 		addOccurrence(possibleOccurrences, 
 				ResourceFactory.createStatement(LINCOLN, BIRTH_PLACE, KENTUCKY_LITERAL), 
 				ResourceFactory.createStatement(LINCOLN, BIRTH_PLACE, KENTUCKY), sExternal);
 		
-		Set<RDFNode> tExternal = new HashSet<RDFNode>();
+		List<RDFNode> tExternal = new LinkedList<RDFNode>();
 		tExternal.add(ONT_PLACE);
 		addOccurrence(possibleOccurrences, 
 				ResourceFactory.createStatement(OBAMA, BIRTH_PLACE, HAWAII), 
 				ResourceFactory.createStatement(HAWAII, RDF.type, ONT_PLACE), tExternal);
 		
-		Set<RDFNode> foExternal = new HashSet<RDFNode>();
+		List<RDFNode> foExternal = new LinkedList<RDFNode>();
 		foExternal.add(HAWAII);
 		addOccurrence(possibleOccurrences, 
 				ResourceFactory.createStatement(HAWAII, RDF.type, ONT_PLACE), 
 				ResourceFactory.createStatement(CHALCIS, RDF.type, ONT_PLACE), foExternal);
 		
-		Set<RDFNode> fiExternal = new HashSet<RDFNode>();
+		List<RDFNode> fiExternal = new LinkedList<RDFNode>();
 		fiExternal.add(LINCOLN);
 		fiExternal.add(SCHEMA_PLACE);
 		addOccurrence(possibleOccurrences, 
@@ -130,7 +131,7 @@ public class DigramTest {
 	 * @param stmt2
 	 * @param externals
 	 */
-	private void addOccurrence(Set<DigramOccurence> possibleOccurrences, Statement stmt1, Statement stmt2, Set<RDFNode>externals) {
+	private void addOccurrence(Set<DigramOccurence> possibleOccurrences, Statement stmt1, Statement stmt2, List<RDFNode>externals) {
 		DigramOccurence newOccurence = new DigramOccurence(stmt1, stmt2, externals);
 		DigramOccurence newOccurence2 = new DigramOccurence(stmt2, stmt1, externals);
 		possibleOccurrences.add(newOccurence);

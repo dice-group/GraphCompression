@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,7 @@ public class DigramHelper {
 		CASE_3	
 	};
 
-	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, Set<RDFNode> externals) {
+	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, List<RDFNode> externals) {
 		Set<Integer> externalIndex = new HashSet<Integer>();
 		for(RDFNode node : externals) {
 			if(e1.getSubject().equals(node)) {
@@ -133,7 +134,7 @@ public class DigramHelper {
 					nodes.add(e1);
 					nodes.add(e2);
 					
-					Set<RDFNode> externals = findExternals(nodes, stmt1, stmt2, graph, CASES[i]);
+					List<RDFNode> externals = findExternals(nodes, stmt1, stmt2, graph, CASES[i]);
 
 			        // it's only an occurrence if it has at least one external node and a maximum of 2 external nodes 
 			        if(!externals.isEmpty() && externals.size()<3) {
@@ -195,8 +196,8 @@ public class DigramHelper {
 	 * @param digramCase 
 	 * @return the set of external nodes
 	 */
-	public static Set<RDFNode> findExternals(List<RDFNode> nodes, Statement stmt1, Statement stmt2, Model graph, String digramCase){
-		Set<RDFNode> externals = new HashSet<RDFNode>();
+	public static List<RDFNode> findExternals(List<RDFNode> nodes, Statement stmt1, Statement stmt2, Model graph, String digramCase){
+		List<RDFNode> externals = new LinkedList<RDFNode>();
 		for(RDFNode node: nodes) {
 			int diff = 1;
 			if(node.equals(nodes.get(1))) {
