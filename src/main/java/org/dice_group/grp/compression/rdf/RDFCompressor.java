@@ -3,8 +3,7 @@ package org.dice_group.grp.compression.rdf;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,8 +11,11 @@ import java.util.Set;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
 import org.dice_group.grp.compression.GRPWriter;
@@ -28,8 +30,12 @@ import org.dice_group.grp.index.impl.URIBasedIndexer;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RDFCompressor {
+	
+	public static final Logger LOGGER = LoggerFactory.getLogger(RDFCompressor.class);
 
 		
 	public File compressRDF(File rdfFile) throws FileNotFoundException, NotAllowedInRDFException{
@@ -49,7 +55,7 @@ public class RDFCompressor {
 	}
 	
 
-	private Grammar createGrammar(Model graph) throws NotAllowedInRDFException {
+	public Grammar createGrammar(Model graph) throws NotAllowedInRDFException {
 		Grammar grammar = new Grammar(graph);
 		//List<Digram> frequenceList = new ArrayList<Digram>();
 		//Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findDigramsOcc(graph, frequenceList);
@@ -64,21 +70,51 @@ public class RDFCompressor {
 			String uriNT = GrammarHelper.getNextNonTerminal();
 			graph = replaceAllOccurences(uriNT, digrams.get(mfd), graph);
 			grammar.addRule(uriNT, mfd);
-			updateOccurences(digrams, frequenceList);
+			updateOccurences(digrams, frequenceList, graph, uriNT);
+			
 		}
 		return grammar;
 	}
 
 	/**
-	 * The method will update the Occurence Lists and frequenceLists accordingly 
+	 * 1) removes the most frequent digram, along with its occurrences, from all pertaining structures
+	 * 2) finds the new digrams revolving aroung the newly added statements
+	 * 3) updates said structures and sorts the frequency list
 	 * 
-	 * @param digrams
-	 * @param frequency
+	 * @param digrams map of digrams to its corresponding non-overlapping occurrences
+	 * @param frequency sorted digrams by frequency
+	 * @param graph
+	 * @param uriNT
 	 */
-	private void updateOccurences(Map<Digram, Set<DigramOccurence>> digrams, List<Digram> frequency) {
-		// TODO @Felix
+	protected void updateOccurences(Map<Digram, Set<DigramOccurence>> digrams, List<Digram> frequency, Model graph, String uriNT) {
+		// remove mfd and the replaced occurrences
+		Digram mfd = frequency.get(0);
+		frequency.remove(0);
+		digrams.remove(mfd);
 		
+		
+		
+		RDFNode nullNode = null;
+		//the new statements will have uriNT as predicate
+		StmtIterator iterator = graph.listStatements(null, ResourceFactory.createProperty(uriNT), nullNode);
+		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
+		while(iterator.hasNext()) {
+			Statement curStmt = iterator.next();
+			occurrences.addAll(DigramHelper.findStmtBasedDigrams(graph, curStmt));
+			
+		}	
+		
+		digrams.forEach((digram,occrs)->{
+			DigramHelper.updateExternals(occrs, graph);
+		});
+		
+		Map<Digram, Set<DigramOccurence>> newEntries = DigramHelper.findNonOverOccurrences(occurrences);
+		DigramHelper.mergeMaps(digrams, newEntries);
+		DigramHelper.updateDigramCount(digrams);
+		frequency = DigramHelper.sortDigrambyFrequence(digrams.keySet());
 	}
+	
+	
 
 	/**
 	 * Replaces all Digram Occurences in graph with uriNT and returns the new graph
