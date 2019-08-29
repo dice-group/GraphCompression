@@ -291,9 +291,9 @@ public class DigramHelper {
 		// by default n2 is the common node
 		if(commonNode == null)
 			commonNode = nodes.get(1);
-		int diff = 1;
 		
 		for(RDFNode node: new HashSet<RDFNode>(nodes)) {
+			int diff = 1;
 			if(node.equals(commonNode)) {
 				diff++;
 			} 

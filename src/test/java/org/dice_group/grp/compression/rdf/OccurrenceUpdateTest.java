@@ -25,12 +25,11 @@ public class OccurrenceUpdateTest{
 	private RDFNode KENTUCKY_LITERAL = ResourceFactory.createPlainLiteral("HardinCounty Kentucky");
 	private Property BIRTH_PLACE = ResourceFactory.createProperty("http://dbpedia.org/ontology/birthPlace");
 	private Resource LINCOLN = ResourceFactory.createResource("http://dbpedia.org/resource/Abraham_Lincoln");
+	private Resource KENTUCKY = ResourceFactory.createResource("http://dbpedia.org/resource/Kentucky");
 	private Resource HARDIN_KENTUCKY = ResourceFactory.createResource("http://dbpedia.org/resource/Hardin_County,_Kentucky");
-	private Resource SCHEMA_PLACE = ResourceFactory.createResource("http://schema.org/Place");
-	private Resource ONT_PLACE = ResourceFactory.createResource("http://dbpedia.org/ontology/Place");
-	private Resource ALABAMA = ResourceFactory.createResource("http://dbpedia.org/resource/Alabama");
 	private Resource THING = ResourceFactory.createResource("http://www.w3.org/2002/07/owl#Thing");
-	private Resource CHALCIS = ResourceFactory.createResource("http://dbpedia.org/resource/Chalcis");
+	private Resource OBAMA = ResourceFactory.createResource("http://dbpedia.org/resource/Barack_Obama");
+	private Resource HAWAII = ResourceFactory.createResource("http://dbpedia.org/resource/Hawaii");
 
 	@Test
 	public void occurrenceUpdateTest() {
@@ -44,8 +43,7 @@ public class OccurrenceUpdateTest{
 		List<Digram> frequenceList = DigramHelper.sortDigrambyFrequence(digrams.keySet());
 		while(frequenceList.size()>0) {
 			Digram mfd = frequenceList.get(0);
-			// just for testing purposes
-			if(mfd.getNoOfOccurences()<=0) {
+			if(mfd.getNoOfOccurences()<=1) {
 				break;
 			}
 			String uriNT = GrammarHelper.getNextNonTerminal();
@@ -61,6 +59,9 @@ public class OccurrenceUpdateTest{
 			// does it contain anything that was supposed to be removed?		
 			Assert.assertFalse(frequenceList.contains(mfd));
 			Assert.assertFalse(digrams.containsKey(mfd));
+			digrams.forEach((k,v)->{
+				System.out.println(k.toString()+v.toString());
+			});
 		}
 		Set<Statement> modelStmts = graph.listStatements().toSet();
 		
@@ -70,11 +71,11 @@ public class OccurrenceUpdateTest{
 	
 	public Set<Statement> getExpected() {
 		Set<Statement> expected = new HashSet<Statement>();
+		expected.add(ResourceFactory.createStatement(HAWAII, ResourceFactory.createProperty(":n0"), HAWAII));
+		expected.add(ResourceFactory.createStatement(LINCOLN, BIRTH_PLACE, KENTUCKY));
 		expected.add(ResourceFactory.createStatement(LINCOLN, BIRTH_PLACE, KENTUCKY_LITERAL));
-		expected.add(ResourceFactory.createStatement(LINCOLN, ResourceFactory.createProperty(":n1"), LINCOLN));
-		expected.add(ResourceFactory.createStatement(ONT_PLACE, ResourceFactory.createProperty(":n0"), ONT_PLACE));
-		expected.add(ResourceFactory.createStatement(ALABAMA, RDF.type, SCHEMA_PLACE));
-		expected.add(ResourceFactory.createStatement(CHALCIS, RDF.type, ONT_PLACE));
+		expected.add(ResourceFactory.createStatement(KENTUCKY, ResourceFactory.createProperty(":n0"), KENTUCKY));
+		expected.add(ResourceFactory.createStatement(OBAMA, BIRTH_PLACE, HAWAII));
 		expected.add(ResourceFactory.createStatement(HARDIN_KENTUCKY, RDF.type, THING));
 		return expected;
 	}
