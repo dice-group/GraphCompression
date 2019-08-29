@@ -9,7 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
@@ -61,10 +60,11 @@ public class DigramHelper {
 		allOccurrences.forEach(occurrence->{
 			List<RDFNode> nodes = occurrence.getNodes();
 			Set<RDFNode> externals = new HashSet<RDFNode>(DigramHelper.findExternals(nodes, null, graph));
-			occurrence.setExternals(externals.stream().collect(Collectors.toList()));
+			List<RDFNode> externalList = new LinkedList<RDFNode>(externals);
+			occurrence.setExternals(externalList);
 			occurrence.setExternalIndexes(DigramHelper.getExternalIndexes(occurrence.getEdge1(), 
 					occurrence.getEdge2(), 
-					externals.stream().collect(Collectors.toList())));
+					externalList));
 		});
 	}
 
@@ -150,7 +150,7 @@ public class DigramHelper {
 					nodes.add(n3);
 					Set<RDFNode> externals = new HashSet<RDFNode>(findExternals(nodes, null, graph));
 					
-					DigramOccurence occurrence = new DigramOccurence(newStmt, secStmt, externals.stream().collect(Collectors.toList()));
+					DigramOccurence occurrence = new DigramOccurence(newStmt, secStmt, new LinkedList<RDFNode>(externals));
 					if(!externals.isEmpty() && externals.size()<3) {
 						 occurrences.add(occurrence);
 					}
@@ -229,7 +229,7 @@ public class DigramHelper {
 
 			        // it's only an occurrence if it has at least one external node and a maximum of 2 external nodes 
 			        if(!externals.isEmpty() && externals.size()<3) {
-			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals.stream().collect(Collectors.toList()));
+			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, new LinkedList<RDFNode>(externals));
 			        	occurrences.add(occurrence);			        	
 			        }
 				}
