@@ -1,13 +1,18 @@
 package org.dice_group.grp.compression.rdf;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.vocabulary.RDF;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
@@ -17,6 +22,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class OccurrenceUpdateTest{
+	private RDFNode KENTUCKY_LITERAL = ResourceFactory.createPlainLiteral("HardinCounty Kentucky");
+	private Property BIRTH_PLACE = ResourceFactory.createProperty("http://dbpedia.org/ontology/birthPlace");
+	private Resource LINCOLN = ResourceFactory.createResource("http://dbpedia.org/resource/Abraham_Lincoln");
+	private Resource HARDIN_KENTUCKY = ResourceFactory.createResource("http://dbpedia.org/resource/Hardin_County,_Kentucky");
+	private Resource SCHEMA_PLACE = ResourceFactory.createResource("http://schema.org/Place");
+	private Resource ONT_PLACE = ResourceFactory.createResource("http://dbpedia.org/ontology/Place");
+	private Resource ALABAMA = ResourceFactory.createResource("http://dbpedia.org/resource/Alabama");
+	private Resource THING = ResourceFactory.createResource("http://www.w3.org/2002/07/owl#Thing");
+	private Resource CHALCIS = ResourceFactory.createResource("http://dbpedia.org/resource/Chalcis");
 
 	@Test
 	public void occurrenceUpdateTest() {
@@ -47,12 +61,21 @@ public class OccurrenceUpdateTest{
 			// does it contain anything that was supposed to be removed?		
 			Assert.assertFalse(frequenceList.contains(mfd));
 			Assert.assertFalse(digrams.containsKey(mfd));
-
-			// are the newly recognized occurrences legit?	
-			digrams.forEach((k,v)->{
-				System.out.println(k.toString()+" "+v.toString());
-			});
-			
 		}
+		Set<Statement> modelStmts = graph.listStatements().toSet();
+		
+		Assert.assertTrue(modelStmts.containsAll(getExpected()));
+		
+	}
+	
+	public Set<Statement> getExpected() {
+		Set<Statement> expected = new HashSet<Statement>();
+		expected.add(ResourceFactory.createStatement(LINCOLN, BIRTH_PLACE, KENTUCKY_LITERAL));
+		expected.add(ResourceFactory.createStatement(LINCOLN, ResourceFactory.createProperty(":n1"), LINCOLN));
+		expected.add(ResourceFactory.createStatement(ONT_PLACE, ResourceFactory.createProperty(":n0"), ONT_PLACE));
+		expected.add(ResourceFactory.createStatement(ALABAMA, RDF.type, SCHEMA_PLACE));
+		expected.add(ResourceFactory.createStatement(CHALCIS, RDF.type, ONT_PLACE));
+		expected.add(ResourceFactory.createStatement(HARDIN_KENTUCKY, RDF.type, THING));
+		return expected;
 	}
 }

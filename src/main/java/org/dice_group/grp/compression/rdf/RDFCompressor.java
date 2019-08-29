@@ -77,9 +77,9 @@ public class RDFCompressor {
 	}
 
 	/**
-	 * 1) removes the most frequent digram, along with its occurrences, from all pertaining structures
+	 * 1) removes the most frequent digram, along with its occurrences, from the map
 	 * 2) finds the new digrams revolving aroung the newly added statements
-	 * 3) updates said structures and sorts the frequency list
+	 * 3) updates the map and sorts the frequency list
 	 * 
 	 * @param digrams map of digrams to its corresponding non-overlapping occurrences
 	 * @param frequency sorted digrams by frequency
@@ -91,9 +91,7 @@ public class RDFCompressor {
 		Digram mfd = frequency.get(0);
 		frequency.remove(0);
 		digrams.remove(mfd);
-		
-		
-		
+			
 		RDFNode nullNode = null;
 		//the new statements will have uriNT as predicate
 		StmtIterator iterator = graph.listStatements(null, ResourceFactory.createProperty(uriNT), nullNode);
@@ -101,7 +99,6 @@ public class RDFCompressor {
 		while(iterator.hasNext()) {
 			Statement curStmt = iterator.next();
 			occurrences.addAll(DigramHelper.findStmtBasedDigrams(graph, curStmt));
-			
 		}	
 		
 		digrams.forEach((digram,occrs)->{
