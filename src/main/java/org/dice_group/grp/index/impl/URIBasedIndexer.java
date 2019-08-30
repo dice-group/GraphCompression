@@ -7,6 +7,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.index.Indexer;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
@@ -27,7 +28,8 @@ import org.rdfhdt.hdtjena.NodeDictionary;
 public class URIBasedIndexer implements Indexer {
 
 	public static final String SUBJECT_PREFIX = ":s";
-	public static final String OBJECT_PREFIX = ":o";
+	//s and o have to be same
+	public static final String OBJECT_PREFIX = ":s";
 	public static final String PROPERTY_PREFIX = ":p";
 	
 	private TempDictionary tmpDict;
@@ -39,7 +41,10 @@ public class URIBasedIndexer implements Indexer {
 		
 	}
 
-	
+	/*
+	 * TODO Do not index digram replace edges
+	 * 
+	 */
 	@Override
 	public Model indexGraph(Model graph) {
 		Model indexedGraph = ModelFactory.createDefaultModel();
@@ -47,7 +52,7 @@ public class URIBasedIndexer implements Indexer {
 		
 		for(Statement stmt : stmts) {
 			tmpDict.insert(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
-			tmpDict.insert(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.OBJECT);
+			tmpDict.insert(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
 			tmpDict.insert(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
 		}
 		DictionaryPrivate dict = DictionaryFactory.createDictionary(new HDTSpecification());
@@ -57,7 +62,7 @@ public class URIBasedIndexer implements Indexer {
 		for(Statement stmt : stmts) {
 			//TODO does not work like that
 			String s = SUBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
-			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.OBJECT);
+			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
 			String p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
 			indexedGraph.add(ResourceFactory.createResource(s), ResourceFactory.createProperty(p),
 					ResourceFactory.createResource(o));
@@ -83,13 +88,23 @@ public class URIBasedIndexer implements Indexer {
 
 	@Override
 	public Grammar indexGrammar(Grammar grammar) {
+		grammar.setStart(indexGraph(grammar.getStart()));
 		for(String key : grammar.getRules().keySet()) {
-			Model graph = grammar.getRules().get(key);
-			graph = this.indexGraph(graph);
+			Digram digram = grammar.getRules().get(key);
+			digram = this.indexDigram(digram);
 			//overwrite old graph with indexed graph
-			grammar.getRules().put(key, graph);
+			grammar.getRules().put(key, digram);
 		}
 		return grammar;
+	}
+
+
+	private Digram indexDigram(Digram digram) {
+		long el1 = tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel1()), TripleComponentRole.PREDICATE);
+		long el2 = tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel2()), TripleComponentRole.PREDICATE);
+		digram.setEdgeLabel1(ResourceFactory.createResource(":p"+el1));
+		digram.setEdgeLabel2(ResourceFactory.createResource(":p"+el2));
+		return null;
 	}
 
 }
