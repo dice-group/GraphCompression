@@ -53,20 +53,16 @@ public class OccurrenceUpdateTest{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+			// TODO isolate updateOccurrences function in a test case scenario
 			c.updateOccurences(digrams, frequenceList, graph, uriNT);
 			
 			// does it contain anything that was supposed to be removed?		
 			Assert.assertFalse(frequenceList.contains(mfd));
 			Assert.assertFalse(digrams.containsKey(mfd));
-			digrams.forEach((k,v)->{
-				System.out.println(k.toString()+v.toString());
-			});
 		}
 		Set<Statement> modelStmts = graph.listStatements().toSet();
-		
-		Assert.assertTrue(modelStmts.containsAll(getExpected()));
-		
+		Assert.assertEquals(getExpected(), modelStmts);
+		Assert.assertEquals(6, modelStmts.size());
 	}
 	
 	public Set<Statement> getExpected() {

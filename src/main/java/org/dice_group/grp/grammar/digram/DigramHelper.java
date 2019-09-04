@@ -92,6 +92,7 @@ public class DigramHelper {
 	
 	/**
 	 * Finds the digram occurrences revolving around a specific statement in a given model
+	 * TODO check (?n1 A ?o2 . ?n2 ?p ?n3 .) AND (?n1 ?p ?o2 . ?n2 A ?n3 .)
 	 * @param graph
 	 * @param newStmt
 	 * @return
@@ -102,29 +103,29 @@ public class DigramHelper {
 		Property e1 = newStmt.getPredicate();
 		RDFNode n2 = newStmt.getObject();
 		
-		StringBuilder spec_case_1 = new StringBuilder("select * where { ");
-		spec_case_1.append(RDFHelper.formatNode(n1)).append(" ")
+		StringBuilder sharedMixCase = new StringBuilder("select * where { ");
+		sharedMixCase.append(RDFHelper.formatNode(n1)).append(" ")
 				.append(RDFHelper.formatNode(e1)).append(" ")
 				.append(RDFHelper.formatNode(n2)).append(". ")
 				.append(RDFHelper.formatNode(n2))
 				.append(" ?e2 ?n3 . } ");
 		
-		StringBuilder spec_case_2 = new StringBuilder("select * where {");
-		spec_case_2.append(RDFHelper.formatNode(n1)).append(" ")
+		StringBuilder sharedObjCase = new StringBuilder("select * where {");
+		sharedObjCase.append(RDFHelper.formatNode(n1)).append(" ")
 		.append(RDFHelper.formatNode(e1)).append(" ")
 		.append(RDFHelper.formatNode(n2)).append(" ")
 		.append(". ?n3 ?e2 ").append(RDFHelper.formatNode(n2)).append(". } ");
 		
-		StringBuilder spec_case_3 = new StringBuilder("select * where {");
-		spec_case_3.append(RDFHelper.formatNode(n2)).append(" ")
+		StringBuilder sharedSubjCase = new StringBuilder("select * where {");
+		sharedSubjCase.append(RDFHelper.formatNode(n2)).append(" ")
 		.append(RDFHelper.formatNode(e1)).append(" ")
 		.append(RDFHelper.formatNode(n1)).append(" ")
 		.append(". ").append(RDFHelper.formatNode(n2)).append(" ?e2 ?n3 . } ");
 		
 		String [] spec_cases = {
-				spec_case_1.toString(),
-				spec_case_2.toString(),
-				spec_case_3.toString()
+				sharedMixCase.toString(),
+				sharedObjCase.toString(),
+				sharedSubjCase.toString()
 		};
 		
 		for (String curCase: spec_cases) {
@@ -134,11 +135,11 @@ public class DigramHelper {
 				Statement secStmt = null;
 				RDFNode n3 = solution.get("n3");
 				Property e2 = ResourceFactory.createProperty(solution.get("e2").toString());
-				if(curCase.equals(spec_case_1.toString()) && n2.isResource()){
+				if(curCase.equals(sharedMixCase.toString()) && n2.isResource()){
 					secStmt = ResourceFactory.createStatement(n2.asResource(), e2, n3);
-				} else if(curCase.equals(spec_case_2.toString())){
+				} else if(curCase.equals(sharedObjCase.toString())){
 					secStmt = ResourceFactory.createStatement(n3.asResource(), e2, n2);
-				} else if(curCase.equals(spec_case_3.toString())){
+				} else if(curCase.equals(sharedSubjCase.toString())){
 					secStmt = ResourceFactory.createStatement(n1, e2, n3);
 				}
 				
