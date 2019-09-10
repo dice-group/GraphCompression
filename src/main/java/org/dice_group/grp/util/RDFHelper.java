@@ -19,6 +19,11 @@ import org.rdfhdt.hdt.rdf.parsers.JenaNodeFormatter;
  */
 public class RDFHelper {
 	
+	private static final Query COUNT_PROPERTIES_QUERY = QueryFactory.create("SELECT (COUNT(DISTINCT ?p) AS ?co) {?s ?p ?o}");
+	private static final Query COUNT_SUBJECTS_QUERY = QueryFactory.create("SELECT (COUNT(DISTINCT ?s) AS ?co) {?s ?p ?o}");
+	private static final Query COUNT_OBJECTS_QUERY = QueryFactory.create("SELECT (COUNT(DISTINCT ?o) AS ?co) {?s ?p ?o}");
+
+	
 	/**
 	 * Formats the node as a string, depending on its nature
 	 * @param node
@@ -59,5 +64,44 @@ public class RDFHelper {
 		}
 		queryExecution.close();	
 		return querySolutionList;
+	}
+	
+	public static Long getPropertyCount(Model model) {
+		try(QueryExecution qexec = QueryExecutionFactory.create(COUNT_PROPERTIES_QUERY, model);){
+			ResultSet res = qexec.execSelect();
+			if(res.hasNext()) {
+				RDFNode countNode = res.next().get(res.getResultVars().get(0));
+				long count = countNode.asLiteral().getLong();
+				return count;
+				
+			}
+		}
+		return null;
+	}
+	
+	public static Long getSubjectCount(Model model) {
+		try(QueryExecution qexec = QueryExecutionFactory.create(COUNT_SUBJECTS_QUERY, model);){
+			ResultSet res = qexec.execSelect();
+			if(res.hasNext()) {
+				RDFNode countNode = res.next().get(res.getResultVars().get(0));
+				long count = countNode.asLiteral().getLong();
+				return count;
+				
+			}
+		}
+		return null;
+	}
+	
+	public static Long getObjectCount(Model model) {
+		try(QueryExecution qexec = QueryExecutionFactory.create(COUNT_OBJECTS_QUERY, model);){
+			ResultSet res = qexec.execSelect();
+			if(res.hasNext()) {
+				RDFNode countNode = res.next().get(res.getResultVars().get(0));
+				long count = countNode.asLiteral().getLong();
+				return count;
+				
+			}
+		}
+		return null;
 	}
 }

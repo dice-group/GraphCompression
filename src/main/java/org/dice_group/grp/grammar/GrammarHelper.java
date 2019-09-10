@@ -16,6 +16,7 @@ public class GrammarHelper {
 	}
 
 	public static Long getIDOfNT(String uriNT) {
+		//nonT should be in HDT Dict
 		return Long.valueOf(uriNT.replace(NON_TERMINAL_PREFIX, ""));
 	}
 	
