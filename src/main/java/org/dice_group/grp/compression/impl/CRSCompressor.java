@@ -3,15 +3,17 @@ package org.dice_group.grp.compression.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
 
 import org.apache.jena.rdf.model.Model;
 import org.dice_group.grp.compression.GrammarCompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.serialization.impl.CRSSerializer;
 import org.dice_group.grp.util.GraphUtils;
@@ -38,83 +40,110 @@ public class CRSCompressor implements GrammarCompressor {
 	}
 
 	/*
-	 * TODO 
-	 * can be compressed better 
 	 * 
 	 * 
 	 */
 	@Override
 	public byte[] serializeRules(Grammar grammar) throws IOException {
-		//1. sort rules using number of externals
-		List<String> singleExternals = new LinkedList<String>();
-		List<String> doubleExternals = new LinkedList<String>();
-		Map<String, Digram> rules = grammar.getRules();
-		for(String nt : rules.keySet()) {
-			if(rules.get(nt).getExternalIndexes().size() == 1 ) {
-				singleExternals.add(nt);
-			}
-			else {
-				doubleExternals.add(nt);
-			}
-		}
-		//2. serialize rule after rule 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		for(String nt : singleExternals) {
-			
-			byte[] serRule = serializeRule(nt, rules.get(nt));
+		Map<String, Digram> rules = grammar.getRules();
+		List<Digram> digrams = new LinkedList<Digram>();
+		//add digrams in order of the Non Terminals, thus it is reversable without saving NT
+		for(Integer i=0;i<rules.size();i++) {
+			digrams.add(rules.get(GrammarHelper.NON_TERMINAL_PREFIX+i.toString()));
+		}
+		for(Digram digram : digrams) {
+			byte[] serRule = serializeDigram(digram);
 			baos.write(serRule);
 		}
-		//add sdSplit
-		baos.write(SINGLE_DOUBLE_SPLIT);
-		for(String nt : doubleExternals) {
-			byte[] serRule = serializeRule(nt, rules.get(nt));
-			baos.write(serRule);
-		}
-		
 		return baos.toByteArray();
 	}
 	
 	/**
 	 * @return
+	 * @throws IOException 
 	 */
-	private byte[] serializeRule(String terminal, Digram m) {
-		// sizeterminal.ext1(ext2)e1e2[o1{int1(, int2)}(,o2{int1, int2},..)]
-		Integer e1 = Integer.valueOf(m.getEdgeLabel1().toString().replace(":p", ""));
+	private byte[] serializeDigram(Digram m) throws IOException {
+		// e1e2{flag|ext1|ext2}[o1{int1(, int2)}(,o2{int1, int2},..)]
+		//e1 is complement => we know when next digram starts
+		Integer e1 = -1*Integer.valueOf(m.getEdgeLabel1().toString().replace(":p", ""));
 		Integer e2 = Integer.valueOf(m.getEdgeLabel2().toString().replace(":p", ""));
-		byte[] terminalBytes = terminal.getBytes();
-		byte[] be1 = ByteBuffer.allocate(Integer.BYTES).putInt(e1).array();
-		byte[] be2 = ByteBuffer.allocate(Integer.BYTES).putInt(e2).array();
-		//TODO external Indexes 1 BYTE FOR both is sufficient
 		
-		Set<Integer> ext= m.getExternalIndexes();
-		ByteBuffer bf = ByteBuffer.allocate(ext.size()*Integer.BYTES);
-		for(Integer extInt: ext) {
-			bf.putInt(extInt);
+		//set ext bytes (0, 1, 2, 3) if only 1 ext ext1=ext2
+		List<Integer> ext= new LinkedList<Integer>(m.getExternalIndexes());
+		Collections.sort(ext);
+		Integer exti1 = 0;
+		Integer exti2 = 0;
+		exti1 = ext.get(0);
+		if(ext.size()>1) {
+			exti2 = ext.get(1);
 		}
-		byte[] extBytes = bf.array();
+		else {
+			exti2=exti1;
+		}
+		exti2 = exti2 << 2;
+		//create combined external
+		byte external = Integer.valueOf(exti2+exti1).byteValue();
 		//TODO getInternals
-		List<Integer[]> internals = new LinkedList<Integer[]>();
-		ByteBuffer intByteBuffer = ByteBuffer.allocate(Integer.BYTES*internals.get(0).length);
-		int bufferIndex=0;
-		for(Integer[] occInternals : internals) {
-			for(Integer internal : occInternals) {
-				intByteBuffer.putInt(bufferIndex,internal);
-				bufferIndex+=Integer.BYTES;
+		List<Long[]> internals = new LinkedList<Long[]>();
+		byte sizeFlag= getSizeFlag(internals);
+		byte internalsFlag = Integer.valueOf((2+internals.get(0).length) << 4).byteValue(); 
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		
+		for(Long[] occInternals : internals) {
+			for(Long internal : occInternals) {
+				if(sizeFlag==0) {
+					baos.write(internal.byteValue());
+				}
+				else if(sizeFlag==1) {
+					baos.write(internal.shortValue());
+				}
+				else if(sizeFlag==2) {
+					baos.write(internal.intValue());
+				}
+				else {
+					baos.write(ByteBuffer.allocate(Long.BYTES).putLong(internal).array());
+				}
 			}
 		}
-		byte[] internalsBytes = intByteBuffer.array();
-		byte[] ret = new byte[Integer.BYTES+1+terminalBytes.length+2*Integer.BYTES+internalsBytes.length];
-		System.arraycopy(ret.length-Integer.BYTES, 0, ret, 0,Integer.BYTES);
-		System.arraycopy(terminalBytes, 0, ret, Integer.BYTES,terminalBytes.length);
-		System.arraycopy(TERMINAL_SPLIT, 0, ret, Integer.BYTES+terminalBytes.length, 1);
-		System.arraycopy(be1, 0, ret, Integer.BYTES+terminalBytes.length+1, Integer.BYTES);
-		System.arraycopy(be2, 0, ret, terminalBytes.length+1+2*Integer.BYTES, Integer.BYTES);
-		System.arraycopy(internalsBytes, 0, ret, terminalBytes.length+1+3*Integer.BYTES, internalsBytes.length);
-
-		return ret;
+		/* set flags
+		 * 1XYYX_1X_2 with 
+		 * X = 1 if two internals, 0 if one internal, 
+		 * YY as internals size 0 = byte, 1 = short, 2= int, 3= long
+		 * X_i as external i
+		 */
+		byte flags = Integer.valueOf(internalsFlag + (sizeFlag << 6) + external).byteValue();
+		
+		byte[] internalsBytes = baos.toByteArray();
+		ByteBuffer ret = ByteBuffer.allocate(9+internalsBytes.length);
+		ret.putInt(e1);
+		ret.putInt(e2);
+		ret.put(flags);
+		ret.put(internalsBytes);
+		return ret.array();
 		
 	}
 	
+	private byte getSizeFlag(List<Long[]> internals) {
+		Long max = 0L;
+		for(Long[] internal : internals) {
+			for(Long internalEl : internal) {
+				max = Math.max(max, internalEl);
+			}			
+		}
+		if(max<=Byte.MAX_VALUE) {
+			return 0;
+		}
+		if(max<=Short.MAX_VALUE) {
+			return 1;
+		}
+		if(max<=Integer.MAX_VALUE) {
+			return 2;
+		}
+		//otherwise long
+		return 3;
+	}
+
 	@Override
 	public byte[] compress(Model graph) throws NotSupportedException {
 		Long noOfProperties = RDFHelper.getPropertyCount(graph);

@@ -2,9 +2,11 @@ package org.dice_group.grp.main;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import org.dice_group.grp.compression.rdf.RDFCompressor;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
+import org.dice_group.grp.exceptions.NotSupportedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +27,7 @@ public class Main {
 		
 	}
 	
-	public void compress(String fileName) throws FileNotFoundException, NotAllowedInRDFException {
+	public void compress(String fileName) throws NotAllowedInRDFException, NotSupportedException, IOException {
 		LOGGER.info("Compressing file {} ",fileName);
 		RDFCompressor c = new RDFCompressor();
 		File grpFile = c.compressRDF(new File(fileName));

@@ -1,19 +1,21 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.dice-group</groupId>
-  <artifactId>GraphCompression</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  
-  <properties>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.dice-group</groupId>
+	<artifactId>GraphCompression</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<properties>
 		<java.version>1.8</java.version>
 		<slf4j.version>1.7.6</slf4j.version>
 		<junit.version>4.11</junit.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jena.version>3.2.0</jena.version>
 	</properties>
-  
-  <dependencies>
-  		<dependency>
+
+	<dependencies>
+		<dependency>
 			<groupId>org.apache.jena</groupId>
 			<artifactId>jena-core</artifactId>
 			<version>3.2.0</version>
@@ -34,7 +36,7 @@
 			<type>pom</type>
 			<version>${jena.version}</version>
 		</dependency>
-				<!-- slf4j: Logging API -->
+		<!-- slf4j: Logging API -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -47,16 +49,16 @@
 			<version>${slf4j.version}</version>
 		</dependency>
 
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.rdfhdt</groupId> -->
-<!-- 			<artifactId>hdt-java-core</artifactId> -->
-<!-- 			<version>2.1-SNAPSHOT</version> -->
-<!-- 		</dependency> -->
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.rdfhdt</groupId> -->
-<!-- 			<artifactId>hdt-jena</artifactId> -->
-<!-- 			<version>2.1-SNAPSHOT</version> -->
-<!-- 		</dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>org.rdfhdt</groupId> -->
+		<!-- <artifactId>hdt-java-core</artifactId> -->
+		<!-- <version>2.1-SNAPSHOT</version> -->
+		<!-- </dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>org.rdfhdt</groupId> -->
+		<!-- <artifactId>hdt-jena</artifactId> -->
+		<!-- <version>2.1-SNAPSHOT</version> -->
+		<!-- </dependency> -->
 		<dependency>
 			<groupId>eu.wdaqua</groupId>
 			<artifactId>hdt-java-core</artifactId>
@@ -67,6 +69,12 @@
 			<artifactId>hdt-jena</artifactId>
 			<version>2.1</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-compress -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.19</version>
+		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -76,19 +84,19 @@
 		</dependency>
 
   </dependencies>
-  
-  <build>
+
+	<build>
 		<plugins>
 			<plugin>
-		        <groupId>org.apache.maven.plugins</groupId>
-		        <artifactId>maven-compiler-plugin</artifactId>
-		        <configuration>
-		            <source>1.8</source>
-		            <target>1.8</target>
-		        </configuration>
-		    </plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
 
 		</plugins>
 	</build>
-  
+
 </project>

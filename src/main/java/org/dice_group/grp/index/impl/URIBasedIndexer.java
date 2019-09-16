@@ -7,6 +7,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.index.Indexer;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
@@ -42,6 +43,10 @@ public class URIBasedIndexer implements Indexer {
 		
 	}
 
+	public DictionaryPrivate getDict() {
+		return dict;
+	}
+	
 	/*
 	 * 
 	 */
@@ -53,7 +58,10 @@ public class URIBasedIndexer implements Indexer {
 		for(Statement stmt : stmts) {
 			String s = SUBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
 			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
-			String p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
+			String p = stmt.getPredicate().toString();
+			//TODO index nt
+			if(!p.startsWith(GrammarHelper.NON_TERMINAL_PREFIX))
+				p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
 			indexedGraph.add(ResourceFactory.createResource(s), ResourceFactory.createProperty(p),
 					ResourceFactory.createResource(o));
 			graph.remove(stmt);
@@ -113,7 +121,7 @@ public class URIBasedIndexer implements Indexer {
 	private void tmpIndexDigrams(Digram digram) {
 		tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel1()), TripleComponentRole.PREDICATE);
 		tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel2()), TripleComponentRole.PREDICATE);
-		//TODO whatever we need to do with the internal Nodes. <<< FUUUUCK
+		//TODO internals (maybe use OBJECT)
 	}
 
 	private Digram indexDigram(Digram digram) {

@@ -5,7 +5,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 
@@ -14,6 +18,9 @@ public class GraphUtils {
 	private static String[] replaceStrings = new String[] {":s", ":n", ":p", ":o"};
 
 	/**
+	 * 
+	 * TODO how to reget the digrams of this??
+	 * 
 	 * creates a matrix with outer List as rows and inner List as columns
 	 * S\O 1 2 3 4
 	 *     ___________
@@ -69,6 +76,31 @@ public class GraphUtils {
 			}
 		}
 		return ret;
+	}
+	
+	
+	/**
+ 	 * TODO how to reget the digrams of this??
+	 * 
+	 * @param rcMatrix
+	 * @return
+	 */
+	public static Model createModelFromRCMatrice(List<List<Integer[]>> rcMatrix){
+		Model m = ModelFactory.createDefaultModel();
+		
+		int rowPtr =0;
+		for(List<Integer[]> row : rcMatrix) {
+			for(Integer[] col : row) {
+				Resource s = ResourceFactory.createResource(":s"+rowPtr);
+				//TODO check if nonTerminal
+				Property p = ResourceFactory.createProperty(":p"+col[0]);
+				Resource o = ResourceFactory.createResource(":o"+col[1]);
+				m.add(s, p, o);
+			}
+			rowPtr++;
+		}
+		
+		return m;
 	}
 	
 	protected static Integer getRDFIndex(RDFNode node) {

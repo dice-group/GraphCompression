@@ -19,6 +19,10 @@ public class CRSDeserializer implements GraphDeserializer{
 	}	
 	
 
+	/**
+	 * returns Lists {colInd, val, rowPtr}
+	 * 
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public List<Integer>[] deserialize(byte[] serialized) {
