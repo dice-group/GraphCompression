@@ -3,6 +3,8 @@ package org.dice_group.grp.compression.rdf;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +64,7 @@ public class RDFCompressor {
 		Set<DigramOccurence> occurrences = DigramHelper.findDigramOccurrences(graph);
 		Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findNonOverOccurrences(occurrences);
 		List<Digram> frequenceList = DigramHelper.sortDigrambyFrequence(digrams.keySet());
+		
 		while(frequenceList.size()>0) {
 			Digram mfd = frequenceList.get(0);
 			if(mfd.getNoOfOccurences()<=1) {
@@ -70,10 +73,42 @@ public class RDFCompressor {
 			String uriNT = GrammarHelper.getNextNonTerminal();
 			graph = replaceAllOccurences(uriNT, digrams.get(mfd), graph);
 			grammar.addRule(uriNT, mfd);
+			grammar.getReplaced().put(mfd, digrams.get(mfd));
 			updateOccurences(digrams, frequenceList, graph, uriNT);
-			
-		}
+		}		
 		return grammar;
+	}
+	
+	/**
+	 * iterates through the grammar's rules and decompresses the statements pertinent to each digram
+	 * @param grammar
+	 * @param replaced
+	 * @return
+	 */
+	public Model decompressGrammar(Grammar grammar) {
+		Model graph = ModelFactory.createDefaultModel();
+		graph.add(grammar.getStart());
+		
+		Map<String, Digram> rules = grammar.getRules();
+		rules.forEach((uriNT, digram)->{
+			replaceStmts(uriNT, digram, graph, grammar.getReplaced());
+		});
+		return graph;
+	}
+	
+	/**
+	 * substitutes the compressed statement with the original statements
+	 */
+	private void replaceStmts(String uriNT, Digram digram, Model graph, Map<Digram, Set<DigramOccurence>> replaced) {
+		List<DigramOccurence> digOccurs = new ArrayList<DigramOccurence>(replaced.get(digram));
+		for(DigramOccurence curOccur: digOccurs) {
+			Statement curStmt = getReplacingStatement(uriNT, curOccur);
+			if(curStmt!=null && graph.contains(curStmt)) {
+				graph.remove(curStmt);
+				graph.add(curOccur.getEdge1());
+				graph.add(curOccur.getEdge2());
+			}
+		}
 	}
 
 	/**
@@ -129,18 +164,10 @@ public class RDFCompressor {
 		for(DigramOccurence docc : set) {
 			graph.remove(docc.getEdge1());
 			graph.remove(docc.getEdge2());
-			//add uriNT between the external nodes
-			// 1 external node 
-			// is it an edge to itself then? 
-			if(docc.getExternals().size()==1) {
-				Resource ext = docc.getExternals().get(0).asResource();
-				graph.add(ext, p, ext);
-			}
-			// 2 external nodes
-			// get first and second => add edge with uriNT
-			if(docc.getExternals().size()==2) {				
-				graph.add(docc.getExternals().get(0).asResource(), p, docc.getExternals().get(1));
-			}
+			Statement stmt = getReplacingStatement(uriNT, docc);
+			if(stmt!=null)
+				graph.add(stmt);
+		
 			// 3 external nodes. 
 			// not possible in RDF if i am correct without adding a node, which makes it only bigger
 			if(docc.getExternals().size()>2) {
@@ -150,6 +177,30 @@ public class RDFCompressor {
 			//graph.add(graph);
 		}
 		return graph;
+	}
+	
+	/**
+	 * 
+	 * @param uriNT
+	 * @param occurrence
+	 * @return
+	 */
+	private Statement getReplacingStatement(String uriNT, DigramOccurence occurrence) {
+		Statement stmt = null;
+		Property p = ResourceFactory.createProperty(uriNT);
+		//add uriNT between the external nodes
+		// 1 external node 
+		// is it an edge to itself then? 
+		if(occurrence.getExternals().size()==1) {
+			Resource ext = occurrence.getExternals().get(0).asResource();
+			stmt = ResourceFactory.createStatement(ext, p, ext);
+		}
+		// 2 external nodes
+		// get first and second => add edge with uriNT
+		if(occurrence.getExternals().size()==2) {				
+			stmt = ResourceFactory.createStatement(occurrence.getExternals().get(0).asResource(), p, occurrence.getExternals().get(1));
+		}
+		return stmt;
 	}
 
 	private Model readFileToModel(File rdfFile) throws FileNotFoundException {

@@ -21,8 +21,6 @@ public class DigramOccurence extends Digram {
 		this.setExternals(external);
 	}
 
-
-
 	public Statement getEdge1() {
 		return e1;
 	}
@@ -47,12 +45,11 @@ public class DigramOccurence extends Digram {
 		this.external = external;
 	}
 
-	
 	public List<RDFNode> getNodes(){
 		List<RDFNode> nodes = new ArrayList<RDFNode>();
 		nodes.add(getEdge1().getSubject());
-		nodes.add(getEdge2().getObject());
-		nodes.add(getEdge1().getSubject());
+		nodes.add(getEdge1().getObject());
+		nodes.add(getEdge2().getSubject());
 		nodes.add(getEdge2().getObject());
 		return nodes;
 	}

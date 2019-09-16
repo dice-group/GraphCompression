@@ -197,6 +197,7 @@ public class DigramHelper {
 		 
 		        Statement stmt1 = null;
 		        Statement stmt2 = null;
+		        
 		        switch (CASES[i]) {
 		        	case CASE_1:
 		        		stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
@@ -231,7 +232,8 @@ public class DigramHelper {
 			        // it's only an occurrence if it has at least one external node and a maximum of 2 external nodes 
 			        if(!externals.isEmpty() && externals.size()<3) {
 			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, new LinkedList<RDFNode>(externals));
-			        	occurrences.add(occurrence);			        	
+			        	occurrences.add(occurrence);		
+			        	
 			        }
 				}
 		    }
