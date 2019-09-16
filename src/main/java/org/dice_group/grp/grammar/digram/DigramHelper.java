@@ -15,6 +15,7 @@ import org.apache.jena.query.QuerySolution;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.dice_group.grp.util.RDFHelper;
@@ -30,7 +31,7 @@ public class DigramHelper {
 		CASE_3	
 	};
 
-	protected static Set<Integer> getExternalIndexes(Statement e1, Statement e2, List<RDFNode> externals) {
+	public static Set<Integer> getExternalIndexes(Statement e1, Statement e2, List<RDFNode> externals) {
 		Set<Integer> externalIndex = new HashSet<Integer>();
 		for(RDFNode node : externals) {
 			if(e1.getSubject().equals(node)) {
@@ -47,6 +48,24 @@ public class DigramHelper {
 			}
 		}
 		return externalIndex;
+	}
+	
+	/**
+	 * 
+	 * @param allOccurrences
+	 * @param graph
+	 */
+	public static void updateExternals(Set<DigramOccurence> allOccurrences, Model graph) {
+		// update the externals ?
+		allOccurrences.forEach(occurrence->{
+			List<RDFNode> nodes = occurrence.getNodes();
+			Set<RDFNode> externals = new HashSet<RDFNode>(DigramHelper.findExternals(nodes, null, graph));
+			List<RDFNode> externalList = new LinkedList<RDFNode>(externals);
+			occurrence.setExternals(externalList);
+			occurrence.setExternalIndexes(DigramHelper.getExternalIndexes(occurrence.getEdge1(), 
+					occurrence.getEdge2(), 
+					externalList));
+		});
 	}
 
 	/**
@@ -70,6 +89,78 @@ public class DigramHelper {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	/**
+	 * Finds the digram occurrences revolving around a specific statement in a given model
+	 * TODO check (?n1 A ?o2 . ?n2 ?p ?n3 .) AND (?n1 ?p ?o2 . ?n2 A ?n3 .)
+	 * @param graph
+	 * @param newStmt
+	 * @return
+	 */
+	public static Set<DigramOccurence> findStmtBasedDigrams(Model graph, Statement newStmt) {
+		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
+		Resource n1 = newStmt.getSubject();
+		Property e1 = newStmt.getPredicate();
+		RDFNode n2 = newStmt.getObject();
+		
+		StringBuilder sharedMixCase = new StringBuilder("select * where { ");
+		sharedMixCase.append(RDFHelper.formatNode(n1)).append(" ")
+				.append(RDFHelper.formatNode(e1)).append(" ")
+				.append(RDFHelper.formatNode(n2)).append(". ")
+				.append(RDFHelper.formatNode(n2))
+				.append(" ?e2 ?n3 . } ");
+		
+		StringBuilder sharedObjCase = new StringBuilder("select * where {");
+		sharedObjCase.append(RDFHelper.formatNode(n1)).append(" ")
+		.append(RDFHelper.formatNode(e1)).append(" ")
+		.append(RDFHelper.formatNode(n2)).append(" ")
+		.append(". ?n3 ?e2 ").append(RDFHelper.formatNode(n2)).append(". } ");
+		
+		StringBuilder sharedSubjCase = new StringBuilder("select * where {");
+		sharedSubjCase.append(RDFHelper.formatNode(n2)).append(" ")
+		.append(RDFHelper.formatNode(e1)).append(" ")
+		.append(RDFHelper.formatNode(n1)).append(" ")
+		.append(". ").append(RDFHelper.formatNode(n2)).append(" ?e2 ?n3 . } ");
+		
+		String [] spec_cases = {
+				sharedMixCase.toString(),
+				sharedObjCase.toString(),
+				sharedSubjCase.toString()
+		};
+		
+		for (String curCase: spec_cases) {
+			QueryExecution queryExecution = RDFHelper.queryModel(graph, curCase);
+			List<QuerySolution> results = RDFHelper.selectModel(queryExecution);
+			for(QuerySolution solution: results) {
+				Statement secStmt = null;
+				RDFNode n3 = solution.get("n3");
+				Property e2 = ResourceFactory.createProperty(solution.get("e2").toString());
+				if(curCase.equals(sharedMixCase.toString()) && n2.isResource()){
+					secStmt = ResourceFactory.createStatement(n2.asResource(), e2, n3);
+				} else if(curCase.equals(sharedObjCase.toString())){
+					secStmt = ResourceFactory.createStatement(n3.asResource(), e2, n2);
+				} else if(curCase.equals(sharedSubjCase.toString())){
+					secStmt = ResourceFactory.createStatement(n1, e2, n3);
+				}
+				
+				if(!newStmt.equals(secStmt)) {
+					List<RDFNode> nodes = new ArrayList<RDFNode>();
+					nodes.add(n1);
+					nodes.add(n2);
+					nodes.add(n2);
+					nodes.add(n3);
+					Set<RDFNode> externals = new HashSet<RDFNode>(findExternals(nodes, null, graph));
+					
+					DigramOccurence occurrence = new DigramOccurence(newStmt, secStmt, new LinkedList<RDFNode>(externals));
+					if(!externals.isEmpty() && externals.size()<3) {
+						 occurrences.add(occurrence);
+					}
+				}
+			}
+		}
+		return occurrences;
+	}
+	
 
 	/**
 	 * Searches the model for ALL occurrences, based on three main patterns:
@@ -106,6 +197,7 @@ public class DigramHelper {
 		 
 		        Statement stmt1 = null;
 		        Statement stmt2 = null;
+		        
 		        switch (CASES[i]) {
 		        	case CASE_1:
 		        		stmt1 = ResourceFactory.createStatement(n1.asResource(), e1, n2);
@@ -130,16 +222,18 @@ public class DigramHelper {
 					List<RDFNode> nodes = new ArrayList<RDFNode>();
 					nodes.add(n1);
 					nodes.add(n2);
+					nodes.add(n2);
 					nodes.add(n3);
-					nodes.add(e1);
-					nodes.add(e2);
+//					nodes.add(e1);
+//					nodes.add(e2);
 					
-					List<RDFNode> externals = findExternals(nodes, stmt1, stmt2, graph, CASES[i]);
+					Set<RDFNode> externals = new HashSet<RDFNode>(findExternals(nodes, n2, graph));
 
 			        // it's only an occurrence if it has at least one external node and a maximum of 2 external nodes 
 			        if(!externals.isEmpty() && externals.size()<3) {
-			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, externals);
-			        	occurrences.add(occurrence);			        	
+			        	DigramOccurence occurrence = new DigramOccurence(stmt1, stmt2, new LinkedList<RDFNode>(externals));
+			        	occurrences.add(occurrence);		
+			        	
 			        }
 				}
 		    }
@@ -162,7 +256,7 @@ public class DigramHelper {
 		for(Digram curDigram: sortedDigrams) {
 			Set<DigramOccurence> digramOccurences = map.getOrDefault(curDigram, new HashSet<DigramOccurence>());
 			for(DigramOccurence curOccurrence: digramOccurences) {
-				Set <RDFNode> nodes = curOccurrence.getNodes();
+				List <RDFNode> nodes = curOccurrence.getNodes();
 
 				// adds the occurrence if there's no nodes in common
 				if(Collections.disjoint(visitedNodes, nodes)) {
@@ -193,16 +287,25 @@ public class DigramHelper {
 	 * @param stmt1
 	 * @param stmt2
 	 * @param graph
-	 * @param digramCase 
 	 * @return the set of external nodes
 	 */
-	public static List<RDFNode> findExternals(List<RDFNode> nodes, Statement stmt1, Statement stmt2, Model graph, String digramCase){
+	public static List<RDFNode> findExternals(List<RDFNode> nodes, RDFNode commonNode, Model graph){
 		List<RDFNode> externals = new LinkedList<RDFNode>();
-		for(RDFNode node: nodes) {
+		// by default n2 is the common node
+		if(commonNode == null)
+			commonNode = nodes.get(1);
+		
+		for(RDFNode node: new HashSet<RDFNode>(nodes)) {
 			int diff = 1;
-			if(node.equals(nodes.get(1))) {
-				diff = 2;
+			if(node.equals(commonNode)) {
+				diff++;
 			} 
+			if (nodes.get(0).equals(nodes.get(1))) {
+				diff++;
+			}
+			if (nodes.get(2).equals(nodes.get(3))) {
+				diff++;
+			}	
 			boolean isNodeExternal = isNodeExternal(RDFHelper.formatNode(node), diff, graph);
 			
 			if(isNodeExternal)
@@ -236,12 +339,11 @@ public class DigramHelper {
 	}
 	
 	
-	
 	/**
 	 * Updates the occurrences count for each digram
 	 * @param diOccurMap
 	 */
-	private static void updateDigramCount(Map<Digram, Set<DigramOccurence>> diOccurMap) {
+	public static void updateDigramCount(Map<Digram, Set<DigramOccurence>> diOccurMap) {
 		diOccurMap.forEach((digram,occurrences)->{
 			digram.setNoOfOccurences(occurrences.size());
 		});
@@ -291,4 +393,19 @@ public class DigramHelper {
 		return sortedDigrams;
 	}
 	
+	/**
+	 * Adds the new entries to the original map
+	 * @param originalMap
+	 * @param newEntries
+	 */
+	public static void mergeMaps (Map<Digram, Set<DigramOccurence>> originalMap, Map<Digram, Set<DigramOccurence>> newEntries){
+		newEntries.forEach((digram, occurrences)->{
+			if(originalMap.containsKey(digram)) {
+				originalMap.get(digram).addAll(occurrences);
+			} else {
+				originalMap.put(digram, occurrences);
+			}
+		});
+	}
+
 }

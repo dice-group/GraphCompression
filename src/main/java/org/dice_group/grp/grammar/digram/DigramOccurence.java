@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar.digram;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,8 +20,6 @@ public class DigramOccurence extends Digram {
 		this.setEdge2(e2);
 		this.setExternals(external);
 	}
-
-
 
 	public Statement getEdge1() {
 		return e1;
@@ -46,12 +45,11 @@ public class DigramOccurence extends Digram {
 		this.external = external;
 	}
 
-	
-	public Set<RDFNode> getNodes(){
-		Set<RDFNode> nodes = new HashSet<RDFNode>();
+	public List<RDFNode> getNodes(){
+		List<RDFNode> nodes = new ArrayList<RDFNode>();
 		nodes.add(getEdge1().getSubject());
-		nodes.add(getEdge2().getObject());
-		nodes.add(getEdge1().getSubject());
+		nodes.add(getEdge1().getObject());
+		nodes.add(getEdge2().getSubject());
 		nodes.add(getEdge2().getObject());
 		return nodes;
 	}

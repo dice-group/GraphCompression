@@ -6,12 +6,14 @@ import java.util.Set;
 
 import org.apache.jena.rdf.model.Model;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.grammar.digram.DigramOccurence;
 
 public class Grammar {
 
 
 	private Model start;
 	private Map<String, Digram> rules = new HashMap<String, Digram>();
+	private Map<Digram, Set<DigramOccurence>> replaced = new HashMap<Digram, Set<DigramOccurence>>();
 
 	public Grammar(Model start) {
 		this.start = start;
@@ -50,5 +52,16 @@ public class Grammar {
 	public Set<String> getNonTerminals(){
 		return rules.keySet();
 	}
+
+	public Map<Digram, Set<DigramOccurence>> getReplaced() {
+		return replaced;
+	}
+
+	public void setReplaced(Map<Digram, Set<DigramOccurence>> replaced) {
+		this.replaced = replaced;
+	}
+	
+	
+
 	
 }
