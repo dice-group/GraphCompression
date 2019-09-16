@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,7 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
 import org.dice_group.grp.compression.GRPWriter;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
+import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
@@ -40,19 +42,17 @@ public class RDFCompressor {
 	public static final Logger LOGGER = LoggerFactory.getLogger(RDFCompressor.class);
 
 		
-	public File compressRDF(File rdfFile) throws FileNotFoundException, NotAllowedInRDFException{
+	public File compressRDF(File rdfFile) throws NotAllowedInRDFException, NotSupportedException, IOException{
 		Model graph = readFileToModel(rdfFile);
 		//Map<Long, String> dict = new HashMap<Long, String>();
 		TempDictionary dict = DictionaryFactory.createTempDictionary(new HDTSpecification());
 		
 		Grammar grammar = createGrammar(graph);
-		//TODO prune grammar
-		
-		//TODO compress grammar and dict into bin file
+		//TODO prune grammar?
+
 		Indexer indexer = new URIBasedIndexer(dict);
 		grammar = indexer.indexGrammar(grammar);
-		GRPWriter.save(grammar, dict);
-		//DONE
+		GRPWriter.save("CHANGE TO USER SPECIFIED NAME", grammar, indexer.getDict());
 		return null;
 	}
 	

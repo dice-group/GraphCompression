@@ -7,6 +7,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.index.Indexer;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
@@ -34,6 +35,7 @@ public class URIBasedIndexer implements Indexer {
 	
 	private TempDictionary tmpDict;
 	private NodeDictionary nodeDict; 
+	private DictionaryPrivate dict;
 
 	public URIBasedIndexer(TempDictionary tmpDict) {
 		this.tmpDict = tmpDict;
@@ -41,13 +43,34 @@ public class URIBasedIndexer implements Indexer {
 		
 	}
 
+	public DictionaryPrivate getDict() {
+		return dict;
+	}
+	
 	/*
-	 * TODO Do not index digram replace edges
 	 * 
 	 */
 	@Override
 	public Model indexGraph(Model graph) {
 		Model indexedGraph = ModelFactory.createDefaultModel();
+		List<Statement> stmts = graph.listStatements().toList();
+
+		for(Statement stmt : stmts) {
+			String s = SUBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
+			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
+			String p = stmt.getPredicate().toString();
+			//TODO index nt
+			if(!p.startsWith(GrammarHelper.NON_TERMINAL_PREFIX))
+				p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
+			indexedGraph.add(ResourceFactory.createResource(s), ResourceFactory.createProperty(p),
+					ResourceFactory.createResource(o));
+			graph.remove(stmt);
+		}
+		this.nodeDict = new NodeDictionary(dict);
+		return indexedGraph;
+	}
+	
+	private void tmpIndexGraph(Model graph) {
 		List<Statement> stmts = graph.listStatements().toList();
 		
 		for(Statement stmt : stmts) {
@@ -55,21 +78,6 @@ public class URIBasedIndexer implements Indexer {
 			tmpDict.insert(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
 			tmpDict.insert(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
 		}
-		DictionaryPrivate dict = DictionaryFactory.createDictionary(new HDTSpecification());
-		ProgressListener listener = new ProgressOut();
-		tmpDict.reorganize();
-		dict.load(tmpDict, listener);
-		for(Statement stmt : stmts) {
-			//TODO does not work like that
-			String s = SUBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
-			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
-			String p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
-			indexedGraph.add(ResourceFactory.createResource(s), ResourceFactory.createProperty(p),
-					ResourceFactory.createResource(o));
-			graph.remove(stmt);
-		}
-		this.nodeDict = new NodeDictionary(dict);
-		return indexedGraph;
 	}
 	
 	@Override
@@ -88,6 +96,17 @@ public class URIBasedIndexer implements Indexer {
 
 	@Override
 	public Grammar indexGrammar(Grammar grammar) {
+		//1. tmpIndex everything
+		tmpIndexGraph(grammar.getStart());
+		for(String key : grammar.getRules().keySet()) {
+			tmpIndexDigrams(grammar.getRules().get(key));
+		}
+		//2. reorganize
+		dict = DictionaryFactory.createDictionary(new HDTSpecification());
+		ProgressListener listener = new ProgressOut();
+		tmpDict.reorganize();
+		dict.load(tmpDict, listener);
+		//3. replace
 		grammar.setStart(indexGraph(grammar.getStart()));
 		for(String key : grammar.getRules().keySet()) {
 			Digram digram = grammar.getRules().get(key);
@@ -99,12 +118,18 @@ public class URIBasedIndexer implements Indexer {
 	}
 
 
+	private void tmpIndexDigrams(Digram digram) {
+		tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel1()), TripleComponentRole.PREDICATE);
+		tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel2()), TripleComponentRole.PREDICATE);
+		//TODO internals (maybe use OBJECT)
+	}
+
 	private Digram indexDigram(Digram digram) {
-		long el1 = tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel1()), TripleComponentRole.PREDICATE);
-		long el2 = tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel2()), TripleComponentRole.PREDICATE);
-		digram.setEdgeLabel1(ResourceFactory.createResource(":p"+el1));
-		digram.setEdgeLabel2(ResourceFactory.createResource(":p"+el2));
-		return null;
+		String el1 = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(digram.getEdgeLabel1()), TripleComponentRole.PREDICATE);
+		String el2 = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(digram.getEdgeLabel2()), TripleComponentRole.PREDICATE);
+		digram.setEdgeLabel1(ResourceFactory.createResource(el1));
+		digram.setEdgeLabel2(ResourceFactory.createResource(el2));
+		return digram;
 	}
 
 }
