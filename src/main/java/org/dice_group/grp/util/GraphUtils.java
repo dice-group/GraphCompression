@@ -113,7 +113,7 @@ public class GraphUtils {
 		return m;
 	}
 	
-	protected static Integer getRDFIndex(RDFNode node) {
+	public static Integer getRDFIndex(RDFNode node) {
 		try {
 			String nodeStr = node.toString();
 			for(String replace : replaceStrings ) {

@@ -1,10 +1,14 @@
 package org.dice_group.grp.grammar.digram;
 
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.impl.StatementImpl;
 
 /**
  * 
@@ -21,7 +25,7 @@ public class Digram {
 	private Resource edgeLabel2;
 	private Resource edgeLabel1;
 	private Set<Integer> external;
-
+	private Byte structure;
 	
 	private long occurences=0;
 	
@@ -42,6 +46,134 @@ public class Digram {
 		this.setEdgeLabel1(edgeLabel1);
 		this.setEdgeLabel2(edgeLabel2);
 		this.external=externalIndexes;
+	}
+	
+
+	public byte getStructure() {
+		return structure;
+	}
+	
+	public void setStructure(byte struct) {
+		this.structure=struct;
+	}
+
+	// this is bs, but no idea how to do it better 3h away from vacation
+	public DigramOccurence createOccurence(List<RDFNode> external, List<RDFNode> internals) {
+		// create occ from digram struct
+		if(structure==0) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+		}
+		if(structure==1) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(1)), external);
+		}
+		if(structure==2) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,internals.get(0)), external);
+		}
+		if(structure==3) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,internals.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+		}
+		if(structure==4) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(1).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+		}
+		if(structure==5) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+		}
+		if(structure==6) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,internals.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+		}
+		if(structure==7) {
+			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(1)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,internals.get(0)), external);
+		}
+		if(structure==8) {
+			return createOccInternal(external, external.get(0), internals.get(0), external.get(0), external.get(1));
+		}
+		if(structure==9) {
+			return createOccInternal(external, external.get(0), internals.get(0), external.get(0), internals.get(1));
+		}
+		if(structure==10) {
+			return createOccInternal(external, internals.get(0), external.get(0), internals.get(0), external.get(1));
+		}
+		if(structure==11) {
+			return createOccInternal(external, internals.get(0), external.get(0), internals.get(0), internals.get(1));
+		}
+		if(structure==12) {
+			return createOccInternal(external, internals.get(0), internals.get(1), internals.get(0), external.get(0));
+		}
+		if(structure==13) {
+			return createOccInternal(external, external.get(0), external.get(1), internals.get(0), external.get(0));
+		}
+		if(structure==14) {
+			return createOccInternal(external, external.get(0), internals.get(0), external.get(1), external.get(0));
+		}
+		if(structure==15) {
+			return createOccInternal(external, external.get(0), internals.get(0), internals.get(1), external.get(0));
+		}
+		if(structure==16) {
+			return createOccInternal(external, internals.get(0), external.get(0), internals.get(0), external.get(1));
+		}
+		if(structure==17) {
+			return createOccInternal(external, internals.get(0), external.get(0), internals.get(0), internals.get(1));
+		}
+		if(structure==18) {
+			return createOccInternal(external, internals.get(0), internals.get(1), internals.get(0), external.get(0));
+		}
+		if(structure==18) {
+			return createOccInternal(external, external.get(1), external.get(0), external.get(0), internals.get(0));
+		}
+		if(structure==19) {
+			return createOccInternal(external, external.get(0), external.get(1), external.get(1), internals.get(0));
+		}
+		if(structure==20) {
+			return createOccInternal(external, internals.get(0), external.get(0), external.get(0), external.get(1));
+		}
+		if(structure==21) {
+			return createOccInternal(external, internals.get(0), external.get(0), external.get(0), internals.get(1));
+		}
+		if(structure==22) {
+			return createOccInternal(external, external.get(0), internals.get(0), internals.get(0), external.get(1));
+		}
+		if(structure==23) {
+			return createOccInternal(external, external.get(0), internals.get(0), internals.get(0), internals.get(1));
+		}
+		if(structure==24) {
+			return createOccInternal(external, internals.get(0), internals.get(1), internals.get(1), external.get(0));
+		}
+		if(structure==25) {
+			return createOccInternal(external, external.get(0), external.get(1), internals.get(0), external.get(1));
+		}
+		if(structure==26) {
+			return createOccInternal(external, internals.get(0), external.get(0), external.get(1), external.get(0));
+		}
+		if(structure==27) {
+			return createOccInternal(external, internals.get(0), external.get(0), internals.get(1), external.get(0));
+		}
+		
+		if(structure==28) {
+			return createOccInternal(external, external.get(0), internals.get(0), external.get(1), internals.get(0));
+		}
+		if(structure==29) {
+			return createOccInternal(external, external.get(0), internals.get(0), internals.get(1), internals.get(0));
+		}
+		if(structure==30) {
+			return createOccInternal(external, internals.get(0), internals.get(1), external.get(0), internals.get(1));
+		}
+		if(structure==31) {
+			return createOccInternal(external, external.get(0), external.get(1), external.get(1), external.get(1));
+		}
+		if(structure==32) {
+			return createOccInternal(external, internals.get(0), external.get(0), external.get(0), external.get(0));
+		}
+		if(structure==33) {
+			return createOccInternal(external, external.get(0), internals.get(0), internals.get(0), internals.get(0));
+		}
+		
+		return null;
+	}
+	
+	
+	private DigramOccurence createOccInternal(List<RDFNode> external, RDFNode n1, RDFNode n2, RDFNode n3, RDFNode n4) {
+		return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(n1.toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,n2), new StatementImpl(ResourceFactory.createResource(n3.toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,n4), external);
+
 	}
 
 	public Resource getEdgeLabel2() {
@@ -96,6 +228,7 @@ public class Digram {
 		result = prime * result + ((edgeLabel1 == null) ? 0 : edgeLabel1.hashCode());
 		result = prime * result + ((edgeLabel2 == null) ? 0 : edgeLabel2.hashCode());
 		result = prime * result + ((external == null) ? 0 : external.hashCode());
+		result = prime * result + ((structure == null) ? 0 : structure.hashCode());
 		return result;
 	}
 
@@ -105,7 +238,7 @@ public class Digram {
 			Digram other = (Digram) obj;
 			checkForNull(this);
 			checkForNull(other);
-			if(!edgeLabel1.equals(other.edgeLabel1)|| !edgeLabel2.equals(other.edgeLabel2) || !external.equals(other.external))
+			if(!edgeLabel1.equals(other.edgeLabel1)|| !edgeLabel2.equals(other.edgeLabel2) || !external.equals(other.external) || !structure.equals(other.structure))
 				return false;
 		}
 		return true;

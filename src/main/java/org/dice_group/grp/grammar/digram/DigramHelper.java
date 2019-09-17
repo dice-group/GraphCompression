@@ -50,6 +50,25 @@ public class DigramHelper {
 		return externalIndex;
 	}
 	
+	public static Set<Integer> getCompressedIndexes(Statement e1, Statement e2, List<RDFNode> externals) {
+		Set<Integer> externalIndex = new HashSet<Integer>();
+		for(RDFNode node : externals) {
+			if(e1.getSubject().equals(node)) {
+				externalIndex.add(0);
+			}
+			else if(e1.getObject().equals(node)) {
+				externalIndex.add(1);
+			}
+			else if(e2.getSubject().equals(node)) {
+				externalIndex.add(2);
+			}
+			else if(e2.getObject().equals(node)) {
+				externalIndex.add(3);
+			}
+		}
+		return externalIndex;
+	}
+	
 	/**
 	 * 
 	 * @param allOccurrences
@@ -340,6 +359,7 @@ public class DigramHelper {
 			if(digramMap.containsKey(curDigram)) {
 				digramMap.get(curDigram).add(occurrence);
 			} else {
+				curDigram.setStructure(occurrence.getStructure());
 				Set<DigramOccurence> newOccur = new HashSet<DigramOccurence>();
 				newOccur.add(occurrence);
 				digramMap.put(curDigram, newOccur);

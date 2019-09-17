@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.dice_group.grp.decompression.GrammarDecompressor;
@@ -16,7 +17,6 @@ import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
-import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.serialization.impl.CRSDeserializer;
 import org.dice_group.grp.util.GraphUtils;
 import org.rdfhdt.hdtjena.NodeDictionary;
@@ -25,8 +25,15 @@ public class CRSDecompressor implements GrammarDecompressor {
 
 	private CRSDeserializer deserializer = new CRSDeserializer();
 	
+	private int[] oneInternalStructs = new int[] {2,3,5,6,7,8,10,13,14,16,19,20,22,25,26,28,32,33};
+	
+	private int[] externalIndexOne = new int[] {0,1,2,4,5,7,8,9,13,14,15,19,22,23,25,28,29,31,33};
+	private int[] externalIndexTwo = new int[] {0,1,2,4,5,7,10,11,13,16,17,19,20,21,25,26,27,31,32};
+	private int[] externalIndexThree = new int[] {0,1,2,4,6,7,9,14,16,18,19,20,21,26,28,30,31,32};
+	private int[] externalIndexFour = new int[] {0,1,3,4,5,8,10,12,13,14,15,20,22,24,25,26,27,31,32};
+	
 	@Override
-	public Grammar decompress(byte[] arr, NodeDictionary dict) throws NotSupportedException, IOException {
+	public Grammar decompress(byte[] arr, NodeDictionary dict, Map<Digram, List<Integer[]>> internalMap) throws NotSupportedException, IOException {
 		//1. 4 bytes = length of start := X
 		int startSize = ByteBuffer.wrap(arr, 0, Integer.BYTES).getInt(0);
 		//2. X bytes = start Graph 
@@ -34,7 +41,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 		Model startGraph = decompressStart(start, dict);
 		//3. decompress rules
 		Grammar g = new Grammar(startGraph);
-		Map<String, Digram> map = decompressRules(ByteBuffer.wrap(arr, Integer.BYTES+startSize, arr.length).array(), g);
+		Map<String, Digram> map = decompressRules(ByteBuffer.wrap(arr, Integer.BYTES+startSize, arr.length).array(), internalMap);
 		
 		g.setRules(map);
 		return g;
@@ -43,7 +50,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 	
 
 	@Override
-	public Map<String, Digram> decompressRules(byte[] arr, Grammar g) throws IOException {
+	public Map<String, Digram> decompressRules(byte[] arr, Map<Digram, List<Integer[]>> internalMap) throws IOException {
 		//read the shit
 		Map<String, Digram> ret = new HashMap<String, Digram>();
 		int j=0;
@@ -58,16 +65,14 @@ public class CRSDecompressor implements GrammarDecompressor {
 			// 3.2. read externals 
 			byte flags = bbuffer.get();
 			// 1XYY EXT1 EXT2
-			byte classFlag = Integer.valueOf((flags ^ 48) >> 6).byteValue();
-			byte internalFlag = Integer.valueOf((flags ^ 64) >> 4).byteValue();
-			byte ext1 = Integer.valueOf((flags ^ 12) >> 2).byteValue();
-			byte ext2 = Integer.valueOf(flags ^ 3).byteValue();
-			Set<Integer> externals = new HashSet<Integer>();
+			// YY STRUCT
+			byte struct=Integer.valueOf((flags ^ 63)).byteValue();
+			byte classFlag = Integer.valueOf((flags ^ 182) >> 6).byteValue();
+			byte internalFlag = getInternalFlag(struct);
+			Set<Integer> externals = getExternals(struct);
+			
 			//ext1 and ext2 -> 
-			externals.add(ext1+1);
-			if(ext1 != ext2) {
-				externals.add(ext2+1);
-			}
+			
 			//4. read arr until leading bit is 1 (that is start of next digram)
 			boolean nextDigram = false;
 			List<Integer[]> internals = new LinkedList<Integer[]>();
@@ -80,9 +85,10 @@ public class CRSDecompressor implements GrammarDecompressor {
 				}
 				internals.add(getNextInternals(bbuffer, classFlag, internalFlag));
 			}
-			//deindex e1 and e2
+			
 			Digram d = new Digram(ResourceFactory.createResource(":"+e1), ResourceFactory.createResource(":"+e2), externals);
-			g.getReplaced().put(d, getDigramOccurences(d, internals));
+			d.setStructure(struct);
+			internalMap.put(d, internals);
 			ret.put(GrammarHelper.NON_TERMINAL_PREFIX+j, d);
 		}while(bbuffer.hasRemaining());
 		return ret;
@@ -90,14 +96,29 @@ public class CRSDecompressor implements GrammarDecompressor {
 
 
 
-	/**
-	 * TODO Only provides placeholder occurences (statements do not have nodes yet!)
-	 * @param d
-	 * @param internals
-	 * @return
-	 */
-	private List<DigramOccurence> getDigramOccurences(Digram d, List<Integer[]> internals) {
-		return null;
+	private Set<Integer> getExternals(byte struct) {
+		Set<Integer> ret = new HashSet<Integer>();
+		if(ArrayUtils.contains(externalIndexOne, struct))
+			ret.add(0);
+		if(ArrayUtils.contains(externalIndexTwo, struct))
+			ret.add(1);
+		if(ArrayUtils.contains(externalIndexThree, struct))
+			ret.add(2);
+		if(ArrayUtils.contains(externalIndexFour, struct))
+			ret.add(3);
+		return ret;
+	}
+
+
+
+	private byte getInternalFlag(byte struct) {
+		if(struct == 0 || struct == 1 || struct == 4 || struct == 31) {
+			return 0;
+		}
+		else if(ArrayUtils.contains(oneInternalStructs, struct)) {
+			return 1;
+		}
+		return 2;
 	}
 
 

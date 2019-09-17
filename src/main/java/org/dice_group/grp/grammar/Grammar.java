@@ -61,7 +61,7 @@ public class Grammar {
 	public void setReplaced(Map<Digram, List<DigramOccurence>> replaced) {
 		this.replaced = replaced;
 	}
-	
+
 	
 
 	

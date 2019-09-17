@@ -20,31 +20,142 @@ public class DigramOccurence extends Digram {
 		this.setEdge1(e1);
 		this.setEdge2(e2);
 		this.setExternals(external);
+		generateStructure();
 	}
 
-	public List<RDFNode> getInternals(){
+	// spagetthi code par excellence, but no idea how to do it better 3h away from vacation
+	public byte generateStructure() {
+		byte struct = 0;
+		if (e1.getSubject().equals(e1.getObject()) && e2.getSubject().equals(e1.getSubject())
+				&& e2.getObject().equals(e1.getSubject())) {
+			// -n- nothing to do
+		} else if (e1.getSubject().equals(e1.getObject())) {
+			if (e1.getSubject().equals(e2.getSubject())) {
+				// n-n --> o
+				if (external.contains(e1.getSubject())) {
+					struct = external.contains(e2.getObject()) ? (byte) 1 : 2;
+				} else {
+					struct = 3;
+				}
+			} else {
+				// n-n <-- o
+				if (external.contains(e1.getSubject())) {
+					struct = external.contains(e2.getObject()) ? (byte) 4 : 5;
+				} else {
+					struct = 6;
+				}
+			}
+		} else if (e1.getSubject().equals(e2.getSubject())) {
+			if (e2.getSubject().equals(e2.getObject())) {
+				// n --> o --> n-n
+				if (external.contains(e1.getSubject())) {
+					struct = external.contains(e1.getObject()) ? (byte) 1 : 2;
+				} else {
+					struct = 6;
+				}
+			} else {
+				if (external.contains(e1.getSubject())) {
+					if (external.contains(e1.getObject())) {
+						struct = 7;
+					} else if (external.contains(e2.getObject())) {
+						struct = 8;
+					} else {
+						struct = 9;
+					}
+				} else {
+					if (external.contains(e1.getObject())) {
+						struct = external.contains(e2.getObject()) ? (byte) 10 : 11;
+					} else {
+						struct = 12;
+					}
+				}
+			}
+		} else if (e1.getSubject().equals(e2.getObject())) {
+			if (external.contains(e1.getSubject())) {
+				if (external.contains(e1.getObject())) {
+					struct = 13;
+				} else if (external.contains(e2.getSubject())) {
+					struct = 14;
+				} else {
+					struct = 15;
+				}
+			} else {
+				if (external.contains(e1.getObject())) {
+					struct = external.contains(e2.getSubject()) ? (byte) 16 : 17;
+				} else {
+					struct = 18;
+				}
+			}
+		} else if (e1.getObject().equals(e2.getSubject())) {
+			if (e2.getSubject().equals(e2.getObject())) {
+				if(external.contains(e1.getSubject())) {
+					struct = external.contains(e2.getSubject())?(byte)31:33;
+				}
+				else {
+					struct = 33;
+				}
+			} else {
+				if (external.contains(e1.getObject())) {
+					if (external.contains(e1.getSubject())) {
+						struct = 19;
+					} else if (external.contains(e2.getObject())) {
+						struct = 20;
+					} else {
+						struct = 21;
+					}
+				} else {
+					if (external.contains(e1.getSubject())) {
+						struct = external.contains(e2.getObject()) ? (byte) 22 : 23;
+					} else {
+						struct = 24;
+					}
+				}
+			}
+		} else if (e1.getObject().equals(e2.getObject())) {
+			if (external.contains(e1.getObject())) {
+				if (external.contains(e1.getSubject())) {
+					struct = 25;
+				} else if (external.contains(e2.getSubject())) {
+					struct = 26;
+				} else {
+					struct = 27;
+				}
+			} else {
+				if (external.contains(e1.getSubject())) {
+					struct = external.contains(e2.getSubject()) ? (byte) 28 : 29;
+				} else {
+					struct = 30;
+				}
+			}
+		}
+
+		this.setStructure(struct);
+		return struct;
+	}
+
+	public List<RDFNode> getInternals() {
 		List<RDFNode> ret = new LinkedList<RDFNode>();
-		if(!external.contains(e1.getSubject())) {
+		if (!external.contains(e1.getSubject())) {
 			ret.add(e1.getSubject());
 		}
-		if(!external.contains(e1.getObject())) {
+		if (!external.contains(e1.getObject())) {
 			ret.add(e1.getObject());
 		}
-		if(!external.contains(e1.getPredicate())) {
+		if (!external.contains(e1.getPredicate())) {
 			ret.add(e1.getPredicate());
 		}
-		if(!external.contains(e2.getSubject())) {
+		if (!external.contains(e2.getSubject())) {
 			ret.add(e2.getSubject());
 		}
-		if(!external.contains(e2.getObject())) {
+		if (!external.contains(e2.getObject())) {
 			ret.add(e2.getObject());
 		}
-		if(!external.contains(e2.getPredicate())) {
+		if (!external.contains(e2.getPredicate())) {
 			ret.add(e2.getPredicate());
 		}
 		return ret;
 	}
-	
+
 	public Statement getEdge1() {
 		return e1;
 	}
@@ -69,7 +180,7 @@ public class DigramOccurence extends Digram {
 		this.external = external;
 	}
 
-	public List<RDFNode> getNodes(){
+	public List<RDFNode> getNodes() {
 		List<RDFNode> nodes = new ArrayList<RDFNode>();
 		nodes.add(getEdge1().getSubject());
 		nodes.add(getEdge1().getObject());
@@ -77,10 +188,10 @@ public class DigramOccurence extends Digram {
 		nodes.add(getEdge2().getObject());
 		return nodes;
 	}
-	
+
 	/**
-	 * Returns true when there are no nodes in common 
-	 * are same
+	 * Returns true when there are no nodes in common are same
+	 * 
 	 * @param occurrences
 	 * @return
 	 */
@@ -88,30 +199,29 @@ public class DigramOccurence extends Digram {
 		Set<RDFNode> allNodes = new HashSet<RDFNode>();
 		addNodes(allNodes, e1);
 		addNodes(allNodes, e2);
-		
+
 		Set<RDFNode> setNodes = new HashSet<RDFNode>();
-		occurrences.forEach((curOccur)->{
+		occurrences.forEach((curOccur) -> {
 			addNodes(setNodes, curOccur.getEdge1());
 			addNodes(setNodes, curOccur.getEdge1());
 		});
 
 		return Collections.disjoint(allNodes, setNodes);
 	}
-	
+
 	private void addNodes(Set<RDFNode> internalNodes, Statement s1) {
 		internalNodes.add(s1.getSubject());
 		internalNodes.add(s1.getObject());
 	}
-	
-	
+
 	@Override
 	public boolean equals(Object obj) {
-		if(obj instanceof DigramOccurence) {
+		if (obj instanceof DigramOccurence) {
 			DigramOccurence otherOcc = (DigramOccurence) obj;
-			//this checks if the statements are the same
-			boolean eq =  (otherOcc.getEdge1().equals(e1) &&  otherOcc.getEdge2().equals(e2)) 
-					|| (otherOcc.getEdge2().equals(e1) && otherOcc.getEdge1().equals(e2)) ;
-			//this additionally checks fit the external nodes are the same
+			// this checks if the statements are the same
+			boolean eq = (otherOcc.getEdge1().equals(e1) && otherOcc.getEdge2().equals(e2))
+					|| (otherOcc.getEdge2().equals(e1) && otherOcc.getEdge1().equals(e2));
+			// this additionally checks fit the external nodes are the same
 			return eq && isOccurence(otherOcc);
 		}
 		return false;

@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.io.IOException;
@@ -86,10 +87,12 @@ public class RDFCompressor {
 	public Model decompress(String file) {
 		DictionaryPrivate dict = DictionaryFactory.createDictionary(new HDTSpecification());
 		try {
-			Grammar g = GRPReader.load(file, dict);
+			Map<Digram, List<Integer[]>> internalMap = new HashMap<Digram, List<Integer[]>>();
+			Grammar g = GRPReader.load(file, dict, internalMap);
 			URIBasedSearcher searcher = new URIBasedSearcher(dict);
 			searcher.deindexGrammar(g);
-			return decompressGrammar(g);
+			Map<Digram, List<List<RDFNode>>> realMap = searcher.deindexInternalMap(internalMap);
+			return decompressGrammar(g, realMap);
 		} catch (NotSupportedException | IOException e) {
 			e.printStackTrace();
 		}
@@ -99,25 +102,26 @@ public class RDFCompressor {
 	/**
 	 * iterates through the grammar's rules and decompresses the statements pertinent to each digram
 	 * @param grammar
+	 * @param realMap 
 	 * @param replaced
 	 * @return
 	 */
-	public Model decompressGrammar(Grammar grammar) {
+	public Model decompressGrammar(Grammar grammar, Map<Digram, List<List<RDFNode>>> realMap) {
 		Model graph = ModelFactory.createDefaultModel();
 		graph.add(grammar.getStart());
 		
 		Map<String, Digram> rules = grammar.getRules();
 		rules.forEach((uriNT, digram)->{
-			replaceStmts(uriNT, digram, graph, grammar.getReplaced().get(digram));
+			replaceStmts(uriNT, digram, graph, realMap.get(digram));
 		});
 		return graph;
 	}
 	
 	/**
 	 * substitutes the compressed statement with the original statements
+	 * @param list 
 	 */
-	private void replaceStmts(String uriNT, Digram digram, Model graph, List<DigramOccurence> occurences) {
-		List<DigramOccurence> digOccurs = new ArrayList<DigramOccurence>(occurences);
+	private void replaceStmts(String uriNT, Digram digram, Model graph, List<List<RDFNode>> internals) {
 		List<Statement> stmts = graph.listStatements(null, ResourceFactory.createProperty(uriNT),(RDFNode)null).toList();
 		// sort stmts after first and second node alphabetically
 		Collections.sort(stmts, new Comparator<Statement>() {
@@ -131,10 +135,13 @@ public class RDFCompressor {
 			
 		});
 		for(int i=0;i<stmts.size();i++) {
+			List<RDFNode> externals = new LinkedList<RDFNode>();
+			externals.add(stmts.get(i).getSubject());
+			externals.add(stmts.get(i).getObject());
+			DigramOccurence occ = digram.createOccurence(externals, internals.get(i));
 			graph.remove(stmts.get(i));
-			//TODO replace placeholder in OCC with actual external nodes
-			graph.add(digOccurs.get(i).getEdge1());
-			graph.add(digOccurs.get(i).getEdge2());
+			graph.add(occ.getEdge1());
+			graph.add(occ.getEdge2());
 		}
 	}
 

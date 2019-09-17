@@ -33,26 +33,12 @@ public class DigramSerializerImpl implements DigramSerializer {
 		Integer e1 = -1*Integer.valueOf(m.getEdgeLabel1().toString().replace(":p", ""));
 		Integer e2 = Integer.valueOf(m.getEdgeLabel2().toString().replace(":p", ""));
 		
-		//set ext bytes (0, 1, 2, 3) if only 1 ext ext1=ext2
-		List<Integer> ext= new LinkedList<Integer>(m.getExternalIndexes());
-		Collections.sort(ext);
-		Integer exti1 = 0;
-		Integer exti2 = 0;
-		exti1 = ext.get(0);
-		if(ext.size()>1) {
-			exti2 = ext.get(1);
-		}
-		else {
-			exti2=exti1;
-		}
-		exti2 = exti2 << 2;
-		//create combined external
-		byte external = Integer.valueOf(exti2+exti1).byteValue();
+		// save struct byte 
+		byte struct = m.getStructure();
 		// getInternals
 		List<Long[]> internals = getInternalIndexes(grammar.getReplaced().get(m));
 		
 		byte sizeFlag= getSizeFlag(internals);
-		byte internalsFlag = Integer.valueOf((2+internals.get(0).length) << 4).byteValue(); 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		
 		for(Long[] occInternals : internals) {
@@ -77,7 +63,7 @@ public class DigramSerializerImpl implements DigramSerializer {
 		 * YY as internals size 0 = byte, 1 = short, 2= int, 3= long
 		 * X_i as external i
 		 */
-		byte flags = Integer.valueOf(internalsFlag + (sizeFlag << 6) + external).byteValue();
+		byte flags = Integer.valueOf((sizeFlag << 6) + struct).byteValue();
 		
 		byte[] internalsBytes = baos.toByteArray();
 		ByteBuffer ret = ByteBuffer.allocate(9+internalsBytes.length);
