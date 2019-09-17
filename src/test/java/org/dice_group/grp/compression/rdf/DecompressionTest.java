@@ -24,7 +24,7 @@ public class DecompressionTest {
 			e.printStackTrace();
 		}
 		if(grammar != null) {
-			Model decompressed = com.decompressGrammar(grammar);
+			Model decompressed = com.decompressGrammar(grammar, null);
 			Assert.assertTrue(decompressed.isIsomorphicWith(originalModel));
 		}
 	}

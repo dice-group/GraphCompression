@@ -48,7 +48,7 @@ public class RDFCompressor {
 	public static final Logger LOGGER = LoggerFactory.getLogger(RDFCompressor.class);
 
 		
-	public File compressRDF(File rdfFile) throws NotAllowedInRDFException, NotSupportedException, IOException{
+	public File compressRDF(File rdfFile, String out) throws NotAllowedInRDFException, NotSupportedException, IOException{
 		Model graph = readFileToModel(rdfFile);
 		//Map<Long, String> dict = new HashMap<Long, String>();
 		TempDictionary dict = DictionaryFactory.createTempDictionary(new HDTSpecification());
@@ -57,8 +57,8 @@ public class RDFCompressor {
 		
 		Indexer indexer = new URIBasedIndexer(dict);
 		grammar = indexer.indexGrammar(grammar);
-		GRPWriter.save("CHANGE TO USER SPECIFIED NAME", grammar, indexer.getDict());
-		return null;
+		GRPWriter.save(out, grammar, indexer.getDict());
+		return new File(out);
 	}
 	
 
