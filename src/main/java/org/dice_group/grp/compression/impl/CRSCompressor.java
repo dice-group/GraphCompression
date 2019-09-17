@@ -3,7 +3,6 @@ package org.dice_group.grp.compression.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +14,10 @@ import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.serialization.DigramSerializer;
+import org.dice_group.grp.serialization.GraphSerializer;
 import org.dice_group.grp.serialization.impl.CRSSerializer;
+import org.dice_group.grp.serialization.impl.DigramSerializerImpl;
 import org.dice_group.grp.util.GraphUtils;
 import org.dice_group.grp.util.RDFHelper;
 
@@ -25,10 +27,13 @@ public class CRSCompressor implements GrammarCompressor {
 	public static final byte SINGLE_DOUBLE_SPLIT = '\t';
 
 	
-	private CRSSerializer serializer = new CRSSerializer();
+	private GraphSerializer serializer = new CRSSerializer();
 
+	private DigramSerializer digramSerializer;
+	
 	@Override
 	public byte[] compress(Grammar grammar) throws NotSupportedException, IOException {
+		digramSerializer = new DigramSerializerImpl(grammar);
 		byte[] start = compress(grammar.getStart());
 		byte[] rules = serializeRules(grammar);
 		byte[] serialized = new byte[start.length+1+rules.length];
@@ -53,96 +58,13 @@ public class CRSCompressor implements GrammarCompressor {
 			digrams.add(rules.get(GrammarHelper.NON_TERMINAL_PREFIX+i.toString()));
 		}
 		for(Digram digram : digrams) {
-			byte[] serRule = serializeDigram(digram);
+			byte[] serRule = digramSerializer.serialize(digram);
 			baos.write(serRule);
 		}
 		return baos.toByteArray();
 	}
 	
-	/**
-	 * @return
-	 * @throws IOException 
-	 */
-	private byte[] serializeDigram(Digram m) throws IOException {
-		// e1e2{flag|ext1|ext2}[o1{int1(, int2)}(,o2{int1, int2},..)]
-		//e1 is complement => we know when next digram starts
-		Integer e1 = -1*Integer.valueOf(m.getEdgeLabel1().toString().replace(":p", ""));
-		Integer e2 = Integer.valueOf(m.getEdgeLabel2().toString().replace(":p", ""));
-		
-		//set ext bytes (0, 1, 2, 3) if only 1 ext ext1=ext2
-		List<Integer> ext= new LinkedList<Integer>(m.getExternalIndexes());
-		Collections.sort(ext);
-		Integer exti1 = 0;
-		Integer exti2 = 0;
-		exti1 = ext.get(0);
-		if(ext.size()>1) {
-			exti2 = ext.get(1);
-		}
-		else {
-			exti2=exti1;
-		}
-		exti2 = exti2 << 2;
-		//create combined external
-		byte external = Integer.valueOf(exti2+exti1).byteValue();
-		//TODO getInternals
-		List<Long[]> internals = new LinkedList<Long[]>();
-		byte sizeFlag= getSizeFlag(internals);
-		byte internalsFlag = Integer.valueOf((2+internals.get(0).length) << 4).byteValue(); 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		
-		for(Long[] occInternals : internals) {
-			for(Long internal : occInternals) {
-				if(sizeFlag==0) {
-					baos.write(internal.byteValue());
-				}
-				else if(sizeFlag==1) {
-					baos.write(internal.shortValue());
-				}
-				else if(sizeFlag==2) {
-					baos.write(internal.intValue());
-				}
-				else {
-					baos.write(ByteBuffer.allocate(Long.BYTES).putLong(internal).array());
-				}
-			}
-		}
-		/* set flags
-		 * 1XYYX_1X_2 with 
-		 * X = 1 if two internals, 0 if one internal, 
-		 * YY as internals size 0 = byte, 1 = short, 2= int, 3= long
-		 * X_i as external i
-		 */
-		byte flags = Integer.valueOf(internalsFlag + (sizeFlag << 6) + external).byteValue();
-		
-		byte[] internalsBytes = baos.toByteArray();
-		ByteBuffer ret = ByteBuffer.allocate(9+internalsBytes.length);
-		ret.putInt(e1);
-		ret.putInt(e2);
-		ret.put(flags);
-		ret.put(internalsBytes);
-		return ret.array();
-		
-	}
 	
-	private byte getSizeFlag(List<Long[]> internals) {
-		Long max = 0L;
-		for(Long[] internal : internals) {
-			for(Long internalEl : internal) {
-				max = Math.max(max, internalEl);
-			}			
-		}
-		if(max<=Byte.MAX_VALUE) {
-			return 0;
-		}
-		if(max<=Short.MAX_VALUE) {
-			return 1;
-		}
-		if(max<=Integer.MAX_VALUE) {
-			return 2;
-		}
-		//otherwise long
-		return 3;
-	}
 
 	@Override
 	public byte[] compress(Model graph) throws NotSupportedException {

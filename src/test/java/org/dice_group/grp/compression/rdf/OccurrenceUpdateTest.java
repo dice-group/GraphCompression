@@ -48,9 +48,8 @@ public class OccurrenceUpdateTest{
 			}
 			String uriNT = GrammarHelper.getNextNonTerminal();
 			try {
-				graph = c.replaceAllOccurences(uriNT, digrams.get(mfd), graph);
+				c.replaceAllOccurences(uriNT, digrams.get(mfd), graph);
 			} catch (NotAllowedInRDFException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			// TODO isolate updateOccurrences function in a test case scenario

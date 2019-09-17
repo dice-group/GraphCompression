@@ -21,7 +21,6 @@ public class DecompressionTest {
 		try {			
 			grammar = com.createGrammar(tobeCompressed);
 		} catch (NotAllowedInRDFException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		if(grammar != null) {

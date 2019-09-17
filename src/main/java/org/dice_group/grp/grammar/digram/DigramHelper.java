@@ -68,28 +68,7 @@ public class DigramHelper {
 		});
 	}
 
-	/**
-	 * Find all non overlapping Digrams and their Occurences in the graph 
-	 * The structure might be stupid, as it is super RAM intensive. 
-	 * Maybe we should use Digram->Binary File, to receive the next most frequent Digram
-	 * or split it into get Digrams and getOccurenceForDigram
-	 * 
-	 * 
-	 * frequence should be updated and sorted
-	 * 
-	 * @param graph
-	 * @return
-	 */
-	public static Map<Digram, Set<DigramOccurence>> findDigramsOcc(Model graph, List<Digram> frequence) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	public static Set<DigramOccurence> findDigrams(Model graph, Digram dig) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
+
 	/**
 	 * Finds the digram occurrences revolving around a specific statement in a given model
 	 * TODO check (?n1 A ?o2 . ?n2 ?p ?n3 .) AND (?n1 ?p ?o2 . ?n2 A ?n3 .)

@@ -14,6 +14,7 @@ import org.dice_group.grp.grammar.Grammar;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
 import org.rdfhdt.hdt.listener.ProgressOut;
 import org.rdfhdt.hdt.options.ControlInformation;
+import org.rdfhdt.hdtjena.NodeDictionary;
 
 public class GRPReader {
 	
@@ -41,7 +42,7 @@ public class GRPReader {
 				dictArr = tais.readAllBytes();
 			}
 			dict.load(new ByteArrayInputStream(dictArr), new ControlInformation(), new ProgressOut());
-			return decompressor.decompress(grammarArr);
+			return decompressor.decompress(grammarArr, new NodeDictionary(dict));
 		}catch(IOException e) {
 			e.printStackTrace();
 		}

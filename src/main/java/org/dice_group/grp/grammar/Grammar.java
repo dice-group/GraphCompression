@@ -1,6 +1,7 @@
 package org.dice_group.grp.grammar;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,7 +14,7 @@ public class Grammar {
 
 	private Model start;
 	private Map<String, Digram> rules = new HashMap<String, Digram>();
-	private Map<Digram, Set<DigramOccurence>> replaced = new HashMap<Digram, Set<DigramOccurence>>();
+	private Map<Digram, List<DigramOccurence>> replaced = new HashMap<Digram, List<DigramOccurence>>();
 
 	public Grammar(Model start) {
 		this.start = start;
@@ -53,11 +54,11 @@ public class Grammar {
 		return rules.keySet();
 	}
 
-	public Map<Digram, Set<DigramOccurence>> getReplaced() {
+	public Map<Digram, List<DigramOccurence>> getReplaced() {
 		return replaced;
 	}
 
-	public void setReplaced(Map<Digram, Set<DigramOccurence>> replaced) {
+	public void setReplaced(Map<Digram, List<DigramOccurence>> replaced) {
 		this.replaced = replaced;
 	}
 	

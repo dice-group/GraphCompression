@@ -26,7 +26,7 @@ public class GRPWriter {
 	public static final String GRAMMAR_ENTRY_NAME = "grammar";
 
 	public static void save(String output,Grammar grammar, DictionaryPrivate dictionaryPrivate) throws  NotSupportedException, IOException {
-		CRSCompressor compressor = new CRSCompressor();
+		GrammarCompressor compressor = new CRSCompressor();
 		byte[] serializedGrammar = compressor.compress(grammar);
 		
 		try(FileOutputStream fos = new FileOutputStream(output);

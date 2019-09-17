@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
 import org.dice_group.grp.compression.GRPWriter;
+import org.dice_group.grp.decompression.GRPReader;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
@@ -31,7 +34,9 @@ import org.dice_group.grp.grammar.digram.DigramHelper;
 import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.index.Indexer;
 import org.dice_group.grp.index.impl.URIBasedIndexer;
+import org.dice_group.grp.index.impl.URIBasedSearcher;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
+import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.slf4j.Logger;
@@ -48,8 +53,7 @@ public class RDFCompressor {
 		TempDictionary dict = DictionaryFactory.createTempDictionary(new HDTSpecification());
 		
 		Grammar grammar = createGrammar(graph);
-		//TODO prune grammar?
-
+		
 		Indexer indexer = new URIBasedIndexer(dict);
 		grammar = indexer.indexGrammar(grammar);
 		GRPWriter.save("CHANGE TO USER SPECIFIED NAME", grammar, indexer.getDict());
@@ -71,12 +75,25 @@ public class RDFCompressor {
 				break;
 			}
 			String uriNT = GrammarHelper.getNextNonTerminal();
-			graph = replaceAllOccurences(uriNT, digrams.get(mfd), graph);
+			//we need to set the replaced in the same order
+			grammar.getReplaced().put(mfd, replaceAllOccurences(uriNT, digrams.get(mfd), graph));
 			grammar.addRule(uriNT, mfd);
-			grammar.getReplaced().put(mfd, digrams.get(mfd));
 			updateOccurences(digrams, frequenceList, graph, uriNT);
 		}		
 		return grammar;
+	}
+	
+	public Model decompress(String file) {
+		DictionaryPrivate dict = DictionaryFactory.createDictionary(new HDTSpecification());
+		try {
+			Grammar g = GRPReader.load(file, dict);
+			URIBasedSearcher searcher = new URIBasedSearcher(dict);
+			searcher.deindexGrammar(g);
+			return decompressGrammar(g);
+		} catch (NotSupportedException | IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 	/**
@@ -91,7 +108,7 @@ public class RDFCompressor {
 		
 		Map<String, Digram> rules = grammar.getRules();
 		rules.forEach((uriNT, digram)->{
-			replaceStmts(uriNT, digram, graph, grammar.getReplaced());
+			replaceStmts(uriNT, digram, graph, grammar.getReplaced().get(digram));
 		});
 		return graph;
 	}
@@ -99,15 +116,25 @@ public class RDFCompressor {
 	/**
 	 * substitutes the compressed statement with the original statements
 	 */
-	private void replaceStmts(String uriNT, Digram digram, Model graph, Map<Digram, Set<DigramOccurence>> replaced) {
-		List<DigramOccurence> digOccurs = new ArrayList<DigramOccurence>(replaced.get(digram));
-		for(DigramOccurence curOccur: digOccurs) {
-			Statement curStmt = getReplacingStatement(uriNT, curOccur);
-			if(curStmt!=null && graph.contains(curStmt)) {
-				graph.remove(curStmt);
-				graph.add(curOccur.getEdge1());
-				graph.add(curOccur.getEdge2());
+	private void replaceStmts(String uriNT, Digram digram, Model graph, List<DigramOccurence> occurences) {
+		List<DigramOccurence> digOccurs = new ArrayList<DigramOccurence>(occurences);
+		List<Statement> stmts = graph.listStatements(null, ResourceFactory.createProperty(uriNT),(RDFNode)null).toList();
+		// sort stmts after first and second node alphabetically
+		Collections.sort(stmts, new Comparator<Statement>() {
+
+			@Override
+			public int compare(Statement arg0, Statement arg1) {
+				String e1 = arg0.getSubject().toString()+arg0.getObject().toString();
+				String e2 = arg1.getSubject().toString()+arg1.getObject().toString();
+				return e1.compareTo(e2);
 			}
+			
+		});
+		for(int i=0;i<stmts.size();i++) {
+			graph.remove(stmts.get(i));
+			//TODO replace placeholder in OCC with actual external nodes
+			graph.add(digOccurs.get(i).getEdge1());
+			graph.add(digOccurs.get(i).getEdge2());
 		}
 	}
 
@@ -159,9 +186,11 @@ public class RDFCompressor {
 	 * @return
 	 * @throws NotAllowedInRDFException 
 	 */
-	protected Model replaceAllOccurences(String uriNT, Set<DigramOccurence> set, Model graph) throws NotAllowedInRDFException {
+	protected List<DigramOccurence> replaceAllOccurences(String uriNT, Set<DigramOccurence> set, Model graph) throws NotAllowedInRDFException {
 		Property p = ResourceFactory.createProperty(uriNT);
+		List<DigramOccurence> replaced = new LinkedList<DigramOccurence>();
 		for(DigramOccurence docc : set) {
+			replaced.add(docc);
 			graph.remove(docc.getEdge1());
 			graph.remove(docc.getEdge2());
 			Statement stmt = getReplacingStatement(uriNT, docc);
@@ -176,7 +205,7 @@ public class RDFCompressor {
 			//docc.getExternals();
 			//graph.add(graph);
 		}
-		return graph;
+		return replaced;
 	}
 	
 	/**

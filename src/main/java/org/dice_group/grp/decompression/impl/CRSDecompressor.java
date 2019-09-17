@@ -16,23 +16,26 @@ import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.serialization.impl.CRSDeserializer;
 import org.dice_group.grp.util.GraphUtils;
+import org.rdfhdt.hdtjena.NodeDictionary;
 
 public class CRSDecompressor implements GrammarDecompressor {
 
 	private CRSDeserializer deserializer = new CRSDeserializer();
 	
 	@Override
-	public Grammar decompress(byte[] arr) throws NotSupportedException, IOException {
+	public Grammar decompress(byte[] arr, NodeDictionary dict) throws NotSupportedException, IOException {
 		//1. 4 bytes = length of start := X
 		int startSize = ByteBuffer.wrap(arr, 0, Integer.BYTES).getInt(0);
 		//2. X bytes = start Graph 
 		byte[] start = ByteBuffer.wrap(arr, Integer.BYTES, Integer.BYTES+startSize).array();
-		Model startGraph = decompressStart(start);
+		Model startGraph = decompressStart(start, dict);
 		//3. decompress rules
-		Map<String, Digram> map = decompressRules(ByteBuffer.wrap(arr, Integer.BYTES+startSize, arr.length).array());
 		Grammar g = new Grammar(startGraph);
+		Map<String, Digram> map = decompressRules(ByteBuffer.wrap(arr, Integer.BYTES+startSize, arr.length).array(), g);
+		
 		g.setRules(map);
 		return g;
 	}
@@ -40,7 +43,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 	
 
 	@Override
-	public Map<String, Digram> decompressRules(byte[] arr) throws IOException {
+	public Map<String, Digram> decompressRules(byte[] arr, Grammar g) throws IOException {
 		//read the shit
 		Map<String, Digram> ret = new HashMap<String, Digram>();
 		int j=0;
@@ -77,12 +80,24 @@ public class CRSDecompressor implements GrammarDecompressor {
 				}
 				internals.add(getNextInternals(bbuffer, classFlag, internalFlag));
 			}
-			//TODO add internals to d and maybe deindex
 			//deindex e1 and e2
 			Digram d = new Digram(ResourceFactory.createResource(":"+e1), ResourceFactory.createResource(":"+e2), externals);
+			g.getReplaced().put(d, getDigramOccurences(d, internals));
 			ret.put(GrammarHelper.NON_TERMINAL_PREFIX+j, d);
 		}while(bbuffer.hasRemaining());
 		return ret;
+	}
+
+
+
+	/**
+	 * TODO Only provides placeholder occurences (statements do not have nodes yet!)
+	 * @param d
+	 * @param internals
+	 * @return
+	 */
+	private List<DigramOccurence> getDigramOccurences(Digram d, List<Integer[]> internals) {
+		return null;
 	}
 
 
@@ -114,7 +129,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 
 
 	@Override
-	public Model decompressStart(byte[] arr) throws NotSupportedException, IOException {
+	public Model decompressStart(byte[] arr, NodeDictionary dict) throws NotSupportedException, IOException {
 		List<Integer>[] deserCRS =  deserializer.deserialize(arr);
 		// reverse CRS
 		List<List<Integer[]>> rcMatrix = new LinkedList<List<Integer[]>>();
@@ -133,7 +148,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 		}
 		
 		// reverse Matrice
-		Model indexedGraph = GraphUtils.createModelFromRCMatrice(rcMatrix);
+		Model indexedGraph = GraphUtils.createModelFromRCMatrice(rcMatrix, dict);
 		
 		return indexedGraph;
 	}

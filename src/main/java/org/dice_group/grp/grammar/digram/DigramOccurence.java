@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
@@ -21,6 +22,29 @@ public class DigramOccurence extends Digram {
 		this.setExternals(external);
 	}
 
+	public List<RDFNode> getInternals(){
+		List<RDFNode> ret = new LinkedList<RDFNode>();
+		if(!external.contains(e1.getSubject())) {
+			ret.add(e1.getSubject());
+		}
+		if(!external.contains(e1.getObject())) {
+			ret.add(e1.getObject());
+		}
+		if(!external.contains(e1.getPredicate())) {
+			ret.add(e1.getPredicate());
+		}
+		if(!external.contains(e2.getSubject())) {
+			ret.add(e2.getSubject());
+		}
+		if(!external.contains(e2.getObject())) {
+			ret.add(e2.getObject());
+		}
+		if(!external.contains(e2.getPredicate())) {
+			ret.add(e2.getPredicate());
+		}
+		return ret;
+	}
+	
 	public Statement getEdge1() {
 		return e1;
 	}

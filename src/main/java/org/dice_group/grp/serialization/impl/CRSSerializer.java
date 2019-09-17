@@ -6,7 +6,7 @@ import java.util.List;
 import org.dice_group.grp.serialization.GraphSerializer;
 
 
-public class CRSSerializer implements GraphSerializer{
+public class CRSSerializer <T> implements GraphSerializer{
 
 	@SuppressWarnings("unchecked")
 	public  <T extends Number> byte[] serializeNumberList(List<T> val, Class<?> numberClass) {
@@ -72,6 +72,7 @@ public class CRSSerializer implements GraphSerializer{
 		return ser;
 	}
 	
+	@Override
 	public <T extends Number> byte[] serialize(List<T> val, List<Integer> colRow, List<Integer> rowPtr) {
 		//serialize lists indiviually
 		byte[] serCol = serializeIntegerList(colRow);
@@ -92,6 +93,7 @@ public class CRSSerializer implements GraphSerializer{
 		System.arraycopy(serRow, 0, ret, colSize.length+serCol.length+serVal.length, serRow.length);
 		return ret;
 	}
+
 	
 	
 }

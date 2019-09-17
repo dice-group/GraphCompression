@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -12,6 +14,8 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdtjena.NodeDictionary;
 
 public class GraphUtils {
 
@@ -19,7 +23,7 @@ public class GraphUtils {
 
 	/**
 	 * 
-	 * TODO how to reget the digrams of this??
+	 * 
 	 * 
 	 * creates a matrix with outer List as rows and inner List as columns
 	 * S\O 1 2 3 4
@@ -80,20 +84,26 @@ public class GraphUtils {
 	
 	
 	/**
- 	 * TODO how to reget the digrams of this??
 	 * 
 	 * @param rcMatrix
 	 * @return
 	 */
-	public static Model createModelFromRCMatrice(List<List<Integer[]>> rcMatrix){
+	public static Model createModelFromRCMatrice(List<List<Integer[]>> rcMatrix, NodeDictionary dict){
 		Model m = ModelFactory.createDefaultModel();
 		
 		int rowPtr =0;
 		for(List<Integer[]> row : rcMatrix) {
 			for(Integer[] col : row) {
 				Resource s = ResourceFactory.createResource(":s"+rowPtr);
-				//TODO check if nonTerminal
+				// check if nonTerminal
 				Property p = ResourceFactory.createProperty(":p"+col[0]);
+				if(dict !=null){
+					Node n = dict.getNode(col[0], TripleComponentRole.PREDICATE);
+					if(n.toString().matches(":n[0-9]+")) {
+						// nterminal
+						p = ResourceFactory.createProperty(n.toString());
+					}
+				}
 				Resource o = ResourceFactory.createResource(":o"+col[1]);
 				m.add(s, p, o);
 			}

@@ -73,23 +73,23 @@ public class RDFCompressorTest {
 		
 		//replace all occ
 		RDFCompressor c = new RDFCompressor();
-		replaced = c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
+		c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
 		occSet.clear();
 		occSet.add(occ.get(2));
 		
-		replaced = c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
+		c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
 		occSet.clear();
 		occSet.add(occ.get(3));
 		
-		replaced = c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
+		c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
 		occSet.clear();
 		occSet.add(occ.get(4));
 		
-		replaced = c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
+		c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
 		occSet.clear();
 		occSet.add(occ.get(5));
 		
-		replaced = c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
+		c.replaceAllOccurences(GrammarHelper.getNextNonTerminal(), occSet, replaced);
 		
 
 		System.out.println(replaced);

@@ -4,11 +4,12 @@ import java.util.List;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.dice_group.grp.grammar.Grammar;
-import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.index.Indexer;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
@@ -59,9 +60,9 @@ public class URIBasedIndexer implements Indexer {
 			String s = SUBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getSubject()), TripleComponentRole.SUBJECT);
 			String o = OBJECT_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getObject()), TripleComponentRole.SUBJECT);
 			String p = stmt.getPredicate().toString();
-			//TODO index nt
-			if(!p.startsWith(GrammarHelper.NON_TERMINAL_PREFIX))
-				p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
+			
+			//if(!p.startsWith(GrammarHelper.NON_TERMINAL_PREFIX))
+			p = PROPERTY_PREFIX+dict.stringToId(JenaNodeFormatter.format(stmt.getPredicate()), TripleComponentRole.PREDICATE);
 			indexedGraph.add(ResourceFactory.createResource(s), ResourceFactory.createProperty(p),
 					ResourceFactory.createResource(o));
 			graph.remove(stmt);
@@ -99,7 +100,8 @@ public class URIBasedIndexer implements Indexer {
 		//1. tmpIndex everything
 		tmpIndexGraph(grammar.getStart());
 		for(String key : grammar.getRules().keySet()) {
-			tmpIndexDigrams(grammar.getRules().get(key));
+			Digram d = grammar.getRules().get(key);
+			tmpIndexDigrams(d, grammar.getReplaced().get(d));
 		}
 		//2. reorganize
 		dict = DictionaryFactory.createDictionary(new HDTSpecification());
@@ -118,10 +120,15 @@ public class URIBasedIndexer implements Indexer {
 	}
 
 
-	private void tmpIndexDigrams(Digram digram) {
+	private void tmpIndexDigrams(Digram digram, List<DigramOccurence> occs) {
 		tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel1()), TripleComponentRole.PREDICATE);
 		tmpDict.insert(JenaNodeFormatter.format(digram.getEdgeLabel2()), TripleComponentRole.PREDICATE);
-		//TODO internals (maybe use OBJECT)
+		//internals (use OBJECT)
+		for(DigramOccurence occ : occs) {
+			for(RDFNode n : occ.getInternals()) {
+				tmpDict.insert(JenaNodeFormatter.format(n), TripleComponentRole.OBJECT);
+			}
+		}
 	}
 
 	private Digram indexDigram(Digram digram) {

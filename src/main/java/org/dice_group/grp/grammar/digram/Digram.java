@@ -22,6 +22,7 @@ public class Digram {
 	private Resource edgeLabel1;
 	private Set<Integer> external;
 
+	
 	private long occurences=0;
 	
 	/**

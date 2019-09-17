@@ -13,6 +13,7 @@ import org.apache.jena.sparql.util.NodeFactoryExtra;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.index.Searcher;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
@@ -50,15 +51,20 @@ public class URIBasedSearcher implements Searcher{
 	public Grammar deindexGrammar(Grammar grammar) {
 		grammar.setStart(deindexGraph(grammar.getStart()));
 		for(String key : grammar.getRules().keySet()) {
-			grammar.getRules().put(key, deindexRule(grammar.getRules().get(key)));
+			grammar.getRules().put(key, deindexRule(grammar.getRules().get(key), grammar));
 		}
 		return grammar;
 	}
 
-	private Digram deindexRule(Digram digram) {
+	private Digram deindexRule(Digram digram, Grammar g) {
 		digram.setEdgeLabel1(ResourceFactory.createProperty(getNodeFromID(digram.getEdgeLabel1().toString().replace(":", ""), TripleComponentRole.PREDICATE).toString()));
 		digram.setEdgeLabel2(ResourceFactory.createProperty(getNodeFromID(digram.getEdgeLabel2().toString().replace(":", ""), TripleComponentRole.PREDICATE).toString()));
-		//TODO internals
+		// occurences
+		for(DigramOccurence occ : g.getReplaced().get(digram)) {
+			//TODO replace internals
+			//TODO replace externals 
+			//TODO replace the nodes in the Statements which are not placeholder :placeholder
+		}
 		return digram;
 	}
 
