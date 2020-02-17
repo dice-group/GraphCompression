@@ -1,14 +1,12 @@
 package org.dice_group.grp.grammar.digram;
 
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.rdf.model.impl.StatementImpl;
+import org.dice_group.grp.grammar.Statement;
 
 /**
  * 
@@ -22,11 +20,11 @@ import org.apache.jena.rdf.model.impl.StatementImpl;
  *
  */
 public class Digram {
-	private Resource edgeLabel2;
-	private Resource edgeLabel1;
+	private Integer edgeLabel2;
+	private Integer edgeLabel1;
 	private Set<Integer> external;
-	private Byte structure;
-	
+	protected Byte structure;
+
 	private long occurences=0;
 	
 	/**
@@ -42,12 +40,13 @@ public class Digram {
 	 * @param edgeLabel2
 	 * @param externalIndexes is subset of {0,1,2,3} with 0 -e1-> 1 and 2 -e2-> 3 
 	 */
-	public Digram(Resource edgeLabel1, Resource edgeLabel2, Set<Integer> externalIndexes) {
+	public Digram(Integer edgeLabel1, Integer edgeLabel2, Set<Integer> externalIndexes) {
 		this.setEdgeLabel1(edgeLabel1);
 		this.setEdgeLabel2(edgeLabel2);
 		this.external=externalIndexes;
 	}
-	
+
+
 
 	public byte getStructure() {
 		return structure;
@@ -58,31 +57,39 @@ public class Digram {
 	}
 
 	// this is bs, but no idea how to do it better 3h away from vacation
-	public DigramOccurence createOccurence(List<RDFNode> external, List<RDFNode> internals) {
+	public DigramOccurence createOccurence(List<Integer> external, List<Integer> internals) {
 		// create occ from digram struct
 		if(structure==0) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			return createOccInternal(external, external.get(0), external.get(0), external.get(0), external.get(0));
 		}
 		if(structure==1) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(1)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(1)), external);
+			return createOccInternal(external, external.get(0), external.get(0), external.get(0), external.get(1));
 		}
 		if(structure==2) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,internals.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,internals.get(0)), external);
+			return createOccInternal(external, external.get(0), external.get(0), external.get(0), internals.get(0));
 		}
 		if(structure==3) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,internals.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,internals.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			return createOccInternal(external, internals.get(0), internals.get(0), internals.get(0), external.get(0));
 		}
 		if(structure==4) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(1).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(external.get(1).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			return createOccInternal(external, external.get(0), external.get(0), external.get(1), external.get(0));
 		}
 		if(structure==5) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			return createOccInternal(external, external.get(0), external.get(0), internals.get(0), external.get(0));
 		}
 		if(structure==6) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,internals.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,internals.get(0)), new StatementImpl(ResourceFactory.createResource(internals.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,external.get(0)), external);
+			return createOccInternal(external, internals.get(0), internals.get(0), external.get(0), internals.get(0));
 		}
 		if(structure==7) {
-			return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(1)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,internals.get(0)), external);
+			//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,external.get(1)), new StatementImpl(ResourceFactory.createResource(external.get(0).toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,internals.get(0)), external);
+			return createOccInternal(external, external.get(0), external.get(1), external.get(0), internals.get(0));
 		}
 		if(structure==8) {
 			return createOccInternal(external, external.get(0), internals.get(0), external.get(0), external.get(1));
@@ -171,24 +178,24 @@ public class Digram {
 	}
 	
 	
-	private DigramOccurence createOccInternal(List<RDFNode> external, RDFNode n1, RDFNode n2, RDFNode n3, RDFNode n4) {
-		return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(n1.toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,n2), new StatementImpl(ResourceFactory.createResource(n3.toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,n4), external);
-
+	private DigramOccurence createOccInternal(List<Integer> external, Integer n1, Integer n2, Integer n3, Integer n4) {
+		return new DigramOccurence(new Statement(n1, edgeLabel1, n2), new Statement(n3, edgeLabel2, n4), external);
+		//return new DigramOccurence(new StatementImpl(ResourceFactory.createResource(n1.toString()), ResourceFactory.createProperty(edgeLabel1.toString()) ,n2), new StatementImpl(ResourceFactory.createResource(n3.toString()), ResourceFactory.createProperty(edgeLabel2.toString()) ,n4), external);
 	}
 
-	public Resource getEdgeLabel2() {
+	public Integer getEdgeLabel2() {
 		return edgeLabel2;
 	}
 
-	public void setEdgeLabel2(Resource edgeLabel2) {
+	public void setEdgeLabel2(Integer edgeLabel2) {
 		this.edgeLabel2 = edgeLabel2;
 	}
 
-	public Resource getEdgeLabel1() {
+	public Integer getEdgeLabel1() {
 		return edgeLabel1;
 	}
 
-	public void setEdgeLabel1(Resource edgeLabel1) {
+	public void setEdgeLabel1(Integer edgeLabel1) {
 		this.edgeLabel1 = edgeLabel1;
 	}
 

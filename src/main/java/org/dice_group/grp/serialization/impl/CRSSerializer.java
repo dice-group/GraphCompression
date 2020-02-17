@@ -1,5 +1,6 @@
 package org.dice_group.grp.serialization.impl;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -42,6 +43,7 @@ public class CRSSerializer <T> implements GraphSerializer{
 	public  byte[] serializeIntegerList(List<Integer> l) {
 		byte[] ser = new byte[l.size()*Integer.BYTES];
 		for(int i=0;i<l.size()*Integer.BYTES;) {
+			
 			byte[] curI = ByteBuffer.allocate(Integer.BYTES).putInt(l.get(i/Integer.BYTES)).array();
 			for(byte b : curI) {
 				ser[i++] = b;
@@ -74,7 +76,7 @@ public class CRSSerializer <T> implements GraphSerializer{
 	
 	@Override
 	public <T extends Number> byte[] serialize(List<T> val, List<Integer> colRow, List<Integer> rowPtr) {
-		//serialize lists indiviually
+		//serialize lists individually
 		byte[] serCol = serializeIntegerList(colRow);
 		byte[] serRow = serializeIntegerList(rowPtr);
 		byte[] serVal;

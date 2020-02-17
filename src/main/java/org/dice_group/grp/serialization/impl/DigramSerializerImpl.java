@@ -12,6 +12,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.grammar.digram.DigramOccurence;
+import org.dice_group.grp.index.impl.InternalIndexer;
 import org.dice_group.grp.serialization.DigramSerializer;
 
 public class DigramSerializerImpl implements DigramSerializer {
@@ -36,9 +37,10 @@ public class DigramSerializerImpl implements DigramSerializer {
 		// save struct byte 
 		byte struct = m.getStructure();
 		// getInternals
+		// TODO for some reaseon getReplaced wont work here 
 		List<Long[]> internals = getInternalIndexes(grammar.getReplaced().get(m));
-		
-		byte sizeFlag= getSizeFlag(internals);
+
+		byte sizeFlag = 0;//getSizeFlag(internals);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		
 		for(Long[] occInternals : internals) {
@@ -70,7 +72,8 @@ public class DigramSerializerImpl implements DigramSerializer {
 		ret.putInt(e1);
 		ret.putInt(e2);
 		ret.put(flags);
-		ret.put(internalsBytes);
+		for(byte b : internalsBytes)
+			ret.put(b);
 		return ret.array();
 		
 	}
@@ -78,17 +81,20 @@ public class DigramSerializerImpl implements DigramSerializer {
 	private List<Long[]> getInternalIndexes(List<DigramOccurence> list) {
 		List<Long[]> ret = new LinkedList<Long[]>();
 		// sort occ list alphabetically after external nodes!!!
+		if(list==null) {
+			return null;
+		}
 		Collections.sort(list, new Comparator<DigramOccurence>() {
 
 			@Override
 			public int compare(DigramOccurence arg0, DigramOccurence arg1) {
 				StringBuilder b1 = new StringBuilder();
-				for(RDFNode n : arg0.getExternals()) {
-					b1.append(n.toString());
+				for(int n : arg0.getExternals()) {
+					b1.append(n+" ");
 				}
 				StringBuilder b2 = new StringBuilder();
-				for(RDFNode n : arg1.getExternals()) {
-					b1.append(n.toString());
+				for(int n : arg1.getExternals()) {
+					b1.append(n+" ");
 				}
 	
 				return b1.toString().compareTo(b2.toString());
@@ -96,11 +102,16 @@ public class DigramSerializerImpl implements DigramSerializer {
 			
 		});
 		for(DigramOccurence occ : list) {
-			List<RDFNode> internals = occ.getInternals();
+			List<Integer> internals = occ.getInternals();
+			
 			Long[] indexInternals = new Long[internals.size()];
 			for(int i=0;i<internals.size();i++) {
-				RDFNode n = internals.get(i);
-				indexInternals[i] = Long.valueOf(n.toString().replace(":s", "").replace(":p", ""));
+				Integer n = internals.get(i);
+				try {
+					indexInternals[i] = Long.valueOf(n);
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
 			}
 			ret.add(indexInternals);
 		}
@@ -109,6 +120,9 @@ public class DigramSerializerImpl implements DigramSerializer {
 
 	private byte getSizeFlag(List<Long[]> internals) {
 		Long max = 0L;
+		if(internals == null) {
+			return 0;
+		}
 		for(Long[] internal : internals) {
 			for(Long internalEl : internal) {
 				max = Math.max(max, internalEl);
@@ -126,5 +140,6 @@ public class DigramSerializerImpl implements DigramSerializer {
 		//otherwise long
 		return 3;
 	}
+
 	
 }

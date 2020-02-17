@@ -1,31 +1,21 @@
 package org.dice_group.grp.compression.rdf;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.io.*;
+import java.util.*;
+
+import grph.Grph;
+import grph.in_memory.InMemoryGrph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
 import org.dice_group.grp.compression.GRPWriter;
-import org.dice_group.grp.decompression.GRPReader;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
@@ -34,214 +24,383 @@ import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.grammar.digram.DigramHelper;
 import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.index.Indexer;
+import org.dice_group.grp.index.impl.IntBasedIndexer;
 import org.dice_group.grp.index.impl.URIBasedIndexer;
-import org.dice_group.grp.index.impl.URIBasedSearcher;
+//import org.jgrapht.graph.AbstractBaseGraph;
+//import org.jgrapht.graph.DefaultDirectedGraph;
+//import org.jgrapht.graph.DirectedMultigraph;
+//import org.jgrapht.graph.DirectedPseudograph;
+import org.dice_group.grp.util.BoundedList;
+import org.dice_group.grp.util.DigramOccurenceComparator;
+import org.dice_group.grp.util.IndexedRDFNode;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
-import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
+import org.rdfhdt.hdt.hdt.HDTVocabulary;
 import org.rdfhdt.hdt.options.HDTSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RDFCompressor {
-	
-	public static final Logger LOGGER = LoggerFactory.getLogger(RDFCompressor.class);
 
-		
-	public File compressRDF(File rdfFile, String out) throws NotAllowedInRDFException, NotSupportedException, IOException{
+	public static final Logger LOGGER = LoggerFactory.getLogger(RDFCompressor.class);
+	private static final long THRESHOLD = 1;
+
+	public DigramHelper dh3 = new DigramHelper();
+	
+	public File compressRDF(File rdfFile, String out, Boolean kd2Flag)
+			throws NotAllowedInRDFException, NotSupportedException, IOException {
+
+
+		long s = Calendar.getInstance().getTimeInMillis();
 		Model graph = readFileToModel(rdfFile);
-		//Map<Long, String> dict = new HashMap<Long, String>();
-		TempDictionary dict = DictionaryFactory.createTempDictionary(new HDTSpecification());
-		
-		Grammar grammar = createGrammar(graph);
-		
-		Indexer indexer = new URIBasedIndexer(dict);
+		long e = Calendar.getInstance().getTimeInMillis();
+		System.out.println("reading took " + (e - s) + " ms");
+
+		// Map<Long, String> dict = new HashMap<Long, String>();
+		HDTSpecification spec = new HDTSpecification();
+		spec.set("dictionary.type", HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION);
+
+		TempDictionary dict = DictionaryFactory.createTempDictionary(spec);
+
+		Grammar grammar = createGrammar(graph, rdfFile);
+
+		IntBasedIndexer indexer = new IntBasedIndexer(dict);
 		grammar = indexer.indexGrammar(grammar);
-		GRPWriter.save(out, grammar, indexer.getDict());
+		GRPWriter.save(out, grammar, indexer.getDict(), kd2Flag);
 		return new File(out);
 	}
-	
 
-	public Grammar createGrammar(Model graph) throws NotAllowedInRDFException {
-		Grammar grammar = new Grammar(graph);
-		//List<Digram> frequenceList = new ArrayList<Digram>();
-		//Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findDigramsOcc(graph, frequenceList);
-		Set<DigramOccurence> occurrences = DigramHelper.findDigramOccurrences(graph);
-		Map<Digram, Set<DigramOccurence>> digrams = DigramHelper.findNonOverOccurrences(occurrences);
-		List<Digram> frequenceList = DigramHelper.sortDigrambyFrequence(digrams.keySet());
-		
-		while(frequenceList.size()>0) {
+	public Grammar createGrammar(Model graph, File f) throws NotAllowedInRDFException, IOException {
+		long origSize = graph.size();
+
+		long s = Calendar.getInstance().getTimeInMillis();
+
+
+		List<RDFNode> soIndex= new ArrayList<RDFNode>();
+		BoundedList pIndex = new BoundedList();
+		Grph g = this.rdfToGrph(graph, soIndex, pIndex, new InMemoryGrph());
+		Grammar grammar = new Grammar(g);
+		grammar.setProps(pIndex);
+		grammar.setSOIndex(soIndex);
+		GrammarHelper.setStartIndexForNT(pIndex.getHighestBound());
+
+		long e = Calendar.getInstance().getTimeInMillis();
+		System.out.println("converting took " + (e - s) + " ms");
+
+		Map<Digram, List<DigramOccurence>> digrams = dh3.getMappingVertex(g, pIndex);
+
+		List<Digram> frequenceList = dh3.sortDigrambyFrequence(digrams);
+		System.out.println("Found " + digrams.size() + " Digrams");
+
+		dh3.removeOverlappingOcc(frequenceList, digrams);
+		System.out.println("Found " + frequenceList.size() + " non overlapping digrams");
+
+		int i = 0;
+		for (Digram d : frequenceList) {
+			System.out.println("Digram " + i++ + " has " + digrams.get(d).size() + " Occurences.");
+		}
+		//int head = g.getDirectedSimpleEdgeHead(2836);
+		System.out.println("Prework done. Onto the algorithm...");
+		Set<Digram> occured = new HashSet<Digram>();
+		while (frequenceList.size() > 0) {
 			Digram mfd = frequenceList.get(0);
-			if(mfd.getNoOfOccurences()<=1) {
+			if (occured.contains(mfd)) {
+				digrams.remove(mfd);
+				frequenceList.remove(mfd);
+				continue;
+			}
+			occured.add(mfd);
+			if (mfd.getNoOfOccurences() <= THRESHOLD) {
 				break;
 			}
-			String uriNT = GrammarHelper.getNextNonTerminal();
-			//we need to set the replaced in the same order
-			grammar.getReplaced().put(mfd, replaceAllOccurences(uriNT, digrams.get(mfd), graph));
+			if (mfd.getNoOfOccurences() > 100000) {
+				System.out.println("WHAAT");
+			}
+			//TODO set NT first
+			// we need to set the replaced in the same order
+			Set<Integer> le = new HashSet<Integer>();
+			List<DigramOccurence> replaced = new ArrayList<DigramOccurence>();
+			int uriNT = replaceAllOccurences(digrams.get(mfd), g, le, pIndex, replaced);
+			System.out.println("Graph size " + g.getEdges().size());
+
+			if (replaced == null) {
+
+				digrams.remove(mfd);
+				frequenceList.remove(mfd);
+				continue;
+			}
+			grammar.getReplaced().put(mfd, replaced);
 			grammar.addRule(uriNT, mfd);
-			updateOccurences(digrams, frequenceList, graph, uriNT);
-		}		
+
+			digrams.remove(mfd);
+			frequenceList.remove(mfd);
+
+			digrams.putAll(dh3.findNewMappingsVertex(g, le, pIndex));
+			//check which is better (faster, accuracy)
+			//digrams = dh3.getMappingVertex(g, pIndex);
+
+			long startSDF = Calendar.getInstance().getTimeInMillis();
+			frequenceList = dh3.sortDigrambyFrequence(digrams);
+			long endSDF = Calendar.getInstance().getTimeInMillis();
+			System.out.println("Sorting took " + (endSDF - startSDF) + " ms");
+
+			long startROO = Calendar.getInstance().getTimeInMillis();
+			dh3.removeOverlappingOcc(frequenceList, digrams);
+			long endROO = Calendar.getInstance().getTimeInMillis();
+			System.out.println("Find & Remove Overlapping took " + (endROO - startROO) + " ms");
+
+			System.out.println("Found " + frequenceList.size() + " non overlapping digrams");
+
+			i = 0;
+			int occCount = 0;
+			for (Digram d : frequenceList) {
+				i++;
+				occCount += digrams.get(d).size();
+			}
+			System.out.println(i + " Digrams with " + occCount + " Occurences.");
+		}
+		System.out.println("Start size " + grammar.getStart().getEdges().size() + " to original size " + origSize + " [ratio: "
+				+ (grammar.getStart().getEdges().size() * 1.0 / origSize) + "]");
+		System.out.println("No Of Rules " + grammar.getRules().size());
+		e = Calendar.getInstance().getTimeInMillis();
+		System.out.println("Grammar compression took " + (e - s) + " ms");
+		System.out.println("Grammar done. Onto indexing & serialization...");
+
 		return grammar;
 	}
-	
-	public Model decompress(String file) {
-		DictionaryPrivate dict = DictionaryFactory.createDictionary(new HDTSpecification());
-		try {
-			Map<Digram, List<Integer[]>> internalMap = new HashMap<Digram, List<Integer[]>>();
-			Grammar g = GRPReader.load(file, dict, internalMap);
-			URIBasedSearcher searcher = new URIBasedSearcher(dict);
-			searcher.deindexGrammar(g);
-			Map<Digram, List<List<RDFNode>>> realMap = searcher.deindexInternalMap(internalMap);
-			return decompressGrammar(g, realMap);
-		} catch (NotSupportedException | IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
-	/**
-	 * iterates through the grammar's rules and decompresses the statements pertinent to each digram
-	 * @param grammar
-	 * @param realMap 
-	 * @param replaced
-	 * @return
-	 */
-	public Model decompressGrammar(Grammar grammar, Map<Digram, List<List<RDFNode>>> realMap) {
-		Model graph = ModelFactory.createDefaultModel();
-		graph.add(grammar.getStart());
-		
-		Map<String, Digram> rules = grammar.getRules();
-		rules.forEach((uriNT, digram)->{
-			replaceStmts(uriNT, digram, graph, realMap.get(digram));
-		});
-		return graph;
-	}
-	
-	/**
-	 * substitutes the compressed statement with the original statements
-	 * @param list 
-	 */
-	private void replaceStmts(String uriNT, Digram digram, Model graph, List<List<RDFNode>> internals) {
-		List<Statement> stmts = graph.listStatements(null, ResourceFactory.createProperty(uriNT),(RDFNode)null).toList();
-		// sort stmts after first and second node alphabetically
-		Collections.sort(stmts, new Comparator<Statement>() {
 
-			@Override
-			public int compare(Statement arg0, Statement arg1) {
-				String e1 = arg0.getSubject().toString()+arg0.getObject().toString();
-				String e2 = arg1.getSubject().toString()+arg1.getObject().toString();
-				return e1.compareTo(e2);
-			}
-			
-		});
-		for(int i=0;i<stmts.size();i++) {
-			List<RDFNode> externals = new LinkedList<RDFNode>();
-			externals.add(stmts.get(i).getSubject());
-			externals.add(stmts.get(i).getObject());
-			DigramOccurence occ = digram.createOccurence(externals, internals.get(i));
-			graph.remove(stmts.get(i));
-			graph.add(occ.getEdge1());
-			graph.add(occ.getEdge2());
-		}
-	}
-
-	/**
-	 * 1) removes the most frequent digram, along with its occurrences, from the map
-	 * 2) finds the new digrams revolving aroung the newly added statements
-	 * 3) updates the map and sorts the frequency list
-	 * 
-	 * @param digrams map of digrams to its corresponding non-overlapping occurrences
-	 * @param frequency sorted digrams by frequency
-	 * @param graph
-	 * @param uriNT
-	 */
-	protected void updateOccurences(Map<Digram, Set<DigramOccurence>> digrams, List<Digram> frequency, Model graph, String uriNT) {
-		// remove mfd and the replaced occurrences
-		Digram mfd = frequency.get(0);
-		frequency.remove(0);
-		digrams.remove(mfd);
-			
-		RDFNode nullNode = null;
-		//the new statements will have uriNT as predicate
-		StmtIterator iterator = graph.listStatements(null, ResourceFactory.createProperty(uriNT), nullNode);
-		Set<DigramOccurence> occurrences = new HashSet<DigramOccurence>();
-		while(iterator.hasNext()) {
-			Statement curStmt = iterator.next();
-			occurrences.addAll(DigramHelper.findStmtBasedDigrams(graph, curStmt));
-		}	
-		
-		digrams.forEach((digram,occrs)->{
-			DigramHelper.updateExternals(occrs, graph);
-		});
-		
-		Map<Digram, Set<DigramOccurence>> newEntries = DigramHelper.findNonOverOccurrences(occurrences);
-		DigramHelper.mergeMaps(digrams, newEntries);
-		DigramHelper.updateDigramCount(digrams);
-		frequency = DigramHelper.sortDigrambyFrequence(digrams.keySet());
-	}
-	
-	
 
 	/**
 	 * Replaces all Digram Occurences in graph with uriNT and returns the new graph
 	 * Be Aware that the original graph will be changed.
+	 *
+	 *
+	 * We will encounter a little problem here, as we exchange a lower_bound occ, so we need to get the original id, and not the lower bound,
+	 *  we could handle this by saving the orig edge ID in the occ as well. Then this is a piece of cake
+	 *  Done
 	 * 
-	 * 
-	 * @param uriNT
-	 * @param set
-	 * @param graph 
+	 * @param collection
+	 * @param g
 	 * @return
-	 * @throws NotAllowedInRDFException 
+	 * @throws NotAllowedInRDFException
 	 */
-	protected List<DigramOccurence> replaceAllOccurences(String uriNT, Set<DigramOccurence> set, Model graph) throws NotAllowedInRDFException {
+	protected Integer replaceAllOccurences(List<DigramOccurence> collection,
+			Grph  g, Set<Integer> checkEdges, BoundedList pIndex, List<DigramOccurence> replaced) {
+		//use BoundedList for NonTerminals too
+		IndexedRDFNode node = new IndexedRDFNode();
+		boolean first = true;
+		Integer firstNT=-1;
+		// sort collection first so we can decompress in the same order
+		Collections.sort(collection, new DigramOccurenceComparator());
+		for(DigramOccurence occ : collection){
+			if(occ==null){
+				continue;
+			}
+			if (occ.getExternals().size() >2) {
+				continue;
+			}
+			Integer nt = GrammarHelper.getNextNonTerminalInt();
+			checkEdges.add(nt);
+			if(first){
+				firstNT=nt;
+				node.setLowerBound(nt);
+				node.setRDFNode(ResourceFactory.createResource(":n"+firstNT));
+				pIndex.add(node);
+				first=false;
+			}
+			node.setUpperBound(nt);
+			replaced.add(occ);
+				try {
+					g.removeEdge(occ.getOrigE1());
+					g.removeEdge(occ.getOrigE2());
+					for (Integer v : occ.getInternals()) {
+						//g.removeVertex(v);
+					}
+				}catch(NullPointerException e){
+					e.printStackTrace();
+					//System.out.println(occ);
+					System.out.println(occ.getOrigE1());
+					System.out.println();
+				}
+				catch(IllegalArgumentException e){
+					e.printStackTrace();
+					//System.out.println(occ);
+					//System.out.println(occ.getOrigE1());
+					//System.out.println();
+				}
+
+			List<Integer> ext = occ.getExternals();
+			if (occ.getExternals().size() == 1) {
+				Integer s = occ.getExternals().get(0);
+				g.addSimpleEdge(s, nt ,s, true);
+			}
+			if (occ.getExternals().size() == 2) {
+				Integer s = occ.getExternals().get(0);
+				Integer o = occ.getExternals().get(1);
+				g.addSimpleEdge(s, nt ,o, true);
+			}
+		}
+		return firstNT;
+		/*
 		Property p = ResourceFactory.createProperty(uriNT);
 		List<DigramOccurence> replaced = new LinkedList<DigramOccurence>();
-		for(DigramOccurence docc : set) {
-			replaced.add(docc);
-			graph.remove(docc.getEdge1());
-			graph.remove(docc.getEdge2());
+		for (DigramOccurence docc : collection) {
 			Statement stmt = getReplacingStatement(uriNT, docc);
-			if(stmt!=null)
-				graph.add(stmt);
-		
-			// 3 external nodes. 
-			// not possible in RDF if i am correct without adding a node, which makes it only bigger
-			if(docc.getExternals().size()>2) {
+			if (stmt != null && stmt.getSubject() != null && stmt.getObject() != null) {
+				replaced.add(docc);
+				//get s and o Index, remove edge, for digram and remove vertexes
+				int s = soIndex.indexOf(docc.getEdge1().getSubject());
+				int o = soIndex.indexOf(docc.getEdge1().getObject());
+				g.removeEdge(s, o);
+				s = soIndex.indexOf(docc.getEdge2().getSubject());
+				o = soIndex.indexOf(docc.getEdge2().getObject());
+				g.removeEdge(s, o);
+				long oldSize = m.size();
+				long newSize = m.remove(docc.getEdge1()).remove(docc.getEdge2()).size();
+				for(RDFNode internal : docc.getInternals()) {
+					int i = soIndex.indexOf(internal);
+					if(i <0){
+						System.err.println("Should not have happend: "+internal+" not found in Index");
+					}
+					g.removeVertices(i);
+				}
+				m.add(stmt);
+				newSize = m.remove(docc.getEdge1()).remove(docc.getEdge2()).size();
+
+				//check = g.addVertex(stmt.getSubject());
+				//check = g.addVertex(stmt.getObject());
+				Integer le = new LabledEdge(stmt.getPredicate().toString());
+				//add new predicate to pIndex and add new Edge
+				s = soIndex.indexOf(stmt.getSubject());
+				IndexedRDFNode iNode = new IndexedRDFNode();
+				iNode.setRDFNode(stmt.getPredicate());
+				int i = pIndex.indexOf(iNode);
+				int newP = pIndex.getHighestBound()+1;
+				if(i>-1){
+					// if exists, just set upper bound
+					iNode = pIndex.get(i);
+					iNode.setUpperBound(iNode.getUpperBound()+1);
+				}
+				else{
+					iNode.setLowerBound(newP);
+					iNode.setUpperBound(newP);
+				}
+				pIndex.add(iNode);
+				o = soIndex.indexOf(stmt.getObject());
+				g.addSimpleEdge(s, newP ,o, true);
+
+				checkEdges.add(le);
+			}
+			// 3 external nodes.
+			// not possible in RDF if i am correct without adding a node, which makes it
+			// only bigger
+			if (docc.getExternals().size() > 2) {
 				throw new NotAllowedInRDFException("Digrams cannot have more than 2 externals in RDF");
 			}
-			//docc.getExternals();
-			//graph.add(graph);
+			// docc.getExternals();
+			// graph.add(graph);
 		}
+
 		return replaced;
+		*/
 	}
-	
-	/**
-	 * 
-	 * @param uriNT
-	 * @param occurrence
-	 * @return
-	 */
+	/*
+        /**
+         *
+         * @param uriNT
+         * @param occurrence
+         * @return
+         *
 	private Statement getReplacingStatement(String uriNT, DigramOccurence occurrence) {
 		Statement stmt = null;
 		Property p = ResourceFactory.createProperty(uriNT);
-		//add uriNT between the external nodes
-		// 1 external node 
-		// is it an edge to itself then? 
-		if(occurrence.getExternals().size()==1) {
+		// add uriNT between the external nodes
+		// 1 external node
+		// is it an edge to itself then?
+		if (occurrence.getExternals().size() == 1) {
 			Resource ext = occurrence.getExternals().get(0).asResource();
 			stmt = ResourceFactory.createStatement(ext, p, ext);
 		}
 		// 2 external nodes
 		// get first and second => add edge with uriNT
-		if(occurrence.getExternals().size()==2) {				
-			stmt = ResourceFactory.createStatement(occurrence.getExternals().get(0).asResource(), p, occurrence.getExternals().get(1));
+		if (occurrence.getExternals().size() == 2) {
+			stmt = ResourceFactory.createStatement(occurrence.getExternals().get(0).asResource(), p,
+					occurrence.getExternals().get(1));
 		}
 		return stmt;
 	}
-
+*/
 	private Model readFileToModel(File rdfFile) throws FileNotFoundException {
 		Lang lang = RDFLanguages.filenameToLang(rdfFile.getName());
-		return ModelFactory.createDefaultModel().read(new FileReader(rdfFile), null, lang.toString());
+		return ModelFactory.createDefaultModel().read(new FileReader(rdfFile), null, lang.getLabel());
 	}
-	
+
+	/**
+	 * Converts a Jena Model into Grph graph using a map which converts a hash to an RDF Node.
+	 * Thus converting each rdf node into a hash, while we can still access the underlying rdf node.
+	 * This is sooo dumb. Well...
+	 *
+	 * @param m Model to convert from
+	 * @param soIndex index to save mapping to
+	 * @param g Grph to convert to
+	 * @return converter Grph Object
+	 */
+	private Grph rdfToGrph(Model m, List<RDFNode> soIndex, BoundedList propertyIndex, Grph g){
+		//sort after properties
+		List<Statement> stmts = m.listStatements().toList();
+		Collections.sort(stmts, new Comparator<Statement>() {
+			@Override
+			public int compare(Statement s1, Statement s2) {
+				return s1.getPredicate().toString().compareTo(s2.getPredicate().toString());
+			}
+		});
+		int p = 0;
+		RDFNode oldP = null;
+		Map<Integer, Integer> nodeID = new HashMap<Integer, Integer>();
+		for(Statement stmt : stmts){
+			//TODO index: use Strings, as jena don't uses lang and xsd for hashCode
+			int s = getNodeIndex(stmt.getSubject(), soIndex, nodeID);
+			IndexedRDFNode iNode = new IndexedRDFNode();
+			iNode.setRDFNode(stmt.getPredicate());
+			//basically just check if the last RDFNode was the same
+			//int i = propertyIndex.indexOf(iNode);
+			if(oldP!=null && oldP.toString().equals(stmt.getPredicate().toString())){
+				// if exists, just set upper bound
+				iNode = propertyIndex.get(propertyIndex.size()-1);
+				iNode.setUpperBound(iNode.getUpperBound()+1);
+			}
+			else{
+				iNode.setLowerBound(p);
+				iNode.setUpperBound(p);
+				propertyIndex.add(iNode);
+				oldP=stmt.getPredicate();
+			}
+
+			//int p = soIndex.size();
+			//We have to add a unique index for every predicate -> thus having |E| amount of
+			//soIndex.add(stmt.getPredicate());
+			int o = getNodeIndex(stmt.getObject(), soIndex, nodeID);
+
+			//soIndex.add(stmt.getSubject());
+			//soIndex.add(stmt.getObject());
+			g.addSimpleEdge(s, p++, o,
+					true);
+
+		}
+		return g;
+	}
+
+	private int getNodeIndex(RDFNode node, List<RDFNode> index, Map<Integer, Integer> nodeID) {
+		// int n = index.indexOf(node);
+		int hash = node.toString().hashCode();
+		if(nodeID.containsKey(hash)){
+			return nodeID.get(hash);
+		}
+
+		index.add(node);
+		nodeID.put(hash, index.size()-1);
+		return index.size()-1;
+	}
+
+
 }

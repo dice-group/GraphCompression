@@ -1,5 +1,6 @@
 package org.dice_group.grp.index;
 
+import grph.Grph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.dice_group.grp.grammar.Grammar;
@@ -22,7 +23,7 @@ public interface Indexer {
 	 * @param graph
 	 * @return
 	 */
-	public Model indexGraph(Model graph);
+	public Grph indexGraph(Grph graph);
 
 	public Node getNodeFromID(int id, TripleComponentRole role);
 

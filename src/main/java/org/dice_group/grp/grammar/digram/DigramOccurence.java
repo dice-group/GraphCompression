@@ -6,21 +6,25 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Statement;
+
+import org.dice_group.grp.grammar.Statement;
 
 public class DigramOccurence extends Digram {
 
 	private Statement e1;
 	private Statement e2;
-	private List<RDFNode> external;
+	private int origE1;
 
-	public DigramOccurence(Statement e1, Statement e2, List<RDFNode> external) {
+
+	private int origE2;
+	private List<Integer> external;
+
+	public DigramOccurence(Statement e1, Statement e2, List<Integer> external) {
 		super(e1.getPredicate(), e2.getPredicate(), DigramHelper.getExternalIndexes(e1, e2, external));
 		this.setEdge1(e1);
 		this.setEdge2(e2);
 		this.setExternals(external);
-		generateStructure();
+		this.structure = generateStructure();
 	}
 
 	// spagetthi code par excellence, but no idea how to do it better 3h away from vacation
@@ -133,26 +137,26 @@ public class DigramOccurence extends Digram {
 		return struct;
 	}
 
-	public List<RDFNode> getInternals() {
-		List<RDFNode> ret = new LinkedList<RDFNode>();
+	public List<Integer> getInternals() {
+		List<Integer> ret = new LinkedList<Integer>();
 		if (!external.contains(e1.getSubject())) {
 			ret.add(e1.getSubject());
 		}
 		if (!external.contains(e1.getObject())) {
 			ret.add(e1.getObject());
 		}
-		if (!external.contains(e1.getPredicate())) {
-			ret.add(e1.getPredicate());
-		}
+//		if (!external.contains(e1.getPredicate())) {
+//			ret.add(e1.getPredicate());
+//		}
 		if (!external.contains(e2.getSubject())) {
 			ret.add(e2.getSubject());
 		}
 		if (!external.contains(e2.getObject())) {
 			ret.add(e2.getObject());
 		}
-		if (!external.contains(e2.getPredicate())) {
-			ret.add(e2.getPredicate());
-		}
+//		if (!external.contains(e2.getPredicate())) {
+//			ret.add(e2.getPredicate());
+//		}
 		return ret;
 	}
 
@@ -172,16 +176,16 @@ public class DigramOccurence extends Digram {
 		this.e2 = e2;
 	}
 
-	public List<RDFNode> getExternals() {
+	public List<Integer> getExternals() {
 		return external;
 	}
 
-	public void setExternals(List<RDFNode> external) {
+	public void setExternals(List<Integer> external) {
 		this.external = external;
 	}
 
-	public List<RDFNode> getNodes() {
-		List<RDFNode> nodes = new ArrayList<RDFNode>();
+	public List<Integer> getNodes() {
+		List<Integer> nodes = new ArrayList<Integer>();
 		nodes.add(getEdge1().getSubject());
 		nodes.add(getEdge1().getObject());
 		nodes.add(getEdge2().getSubject());
@@ -196,11 +200,11 @@ public class DigramOccurence extends Digram {
 	 * @return
 	 */
 	public boolean isNonOverlapping(Set<DigramOccurence> occurrences) {
-		Set<RDFNode> allNodes = new HashSet<RDFNode>();
+		Set<Integer> allNodes = new HashSet<Integer>();
 		addNodes(allNodes, e1);
 		addNodes(allNodes, e2);
 
-		Set<RDFNode> setNodes = new HashSet<RDFNode>();
+		Set<Integer> setNodes = new HashSet<Integer>();
 		occurrences.forEach((curOccur) -> {
 			addNodes(setNodes, curOccur.getEdge1());
 			addNodes(setNodes, curOccur.getEdge1());
@@ -209,10 +213,28 @@ public class DigramOccurence extends Digram {
 		return Collections.disjoint(allNodes, setNodes);
 	}
 
-	private void addNodes(Set<RDFNode> internalNodes, Statement s1) {
+	private void addNodes(Set<Integer> internalNodes, Statement s1) {
 		internalNodes.add(s1.getSubject());
 		internalNodes.add(s1.getObject());
 	}
+
+	public int getOrigE1() {
+		return origE1;
+	}
+
+	public void setOrigE1(int origE1) {
+		this.origE1 = origE1;
+	}
+
+	public int getOrigE2() {
+		return origE2;
+	}
+
+	public void setOrigE2(int origE2) {
+		this.origE2 = origE2;
+	}
+
+
 
 	@Override
 	public boolean equals(Object obj) {

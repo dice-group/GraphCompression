@@ -4,8 +4,8 @@ public class GrammarHelper {
 
 	public static final String NON_TERMINAL_PREFIX = ":n";
 	
-	private static Long nonT = 0l;
-	
+	private static int nonT = 0;
+
 	/**
 	 * This is our Non Terminal 
 	 * @return
@@ -19,5 +19,12 @@ public class GrammarHelper {
 		//nonT should be in HDT Dict
 		return Long.valueOf(uriNT.replace(NON_TERMINAL_PREFIX, ""));
 	}
-	
+
+	public static int getNextNonTerminalInt() {
+		return nonT++;
+	}
+
+	public static void setStartIndexForNT(int ntStart){
+		nonT=ntStart;
+	}
 }

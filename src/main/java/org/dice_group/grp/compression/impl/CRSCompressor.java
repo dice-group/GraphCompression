@@ -3,21 +3,26 @@ package org.dice_group.grp.compression.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 
+import grph.Grph;
+import grph.in_memory.InMemoryGrph;
 import org.apache.jena.rdf.model.Model;
 import org.dice_group.grp.compression.GrammarCompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.index.impl.InternalIndexer;
 import org.dice_group.grp.serialization.DigramSerializer;
 import org.dice_group.grp.serialization.GraphSerializer;
 import org.dice_group.grp.serialization.impl.CRSSerializer;
 import org.dice_group.grp.serialization.impl.DigramSerializerImpl;
+import org.dice_group.grp.util.BoundedList;
 import org.dice_group.grp.util.GraphUtils;
 import org.dice_group.grp.util.RDFHelper;
 
@@ -29,19 +34,21 @@ public class CRSCompressor implements GrammarCompressor {
 	
 	private GraphSerializer serializer = new CRSSerializer();
 
-	private DigramSerializer digramSerializer;
+	private DigramSerializerImpl digramSerializer;
 	
 	@Override
-	public byte[] compress(Grammar grammar) throws NotSupportedException, IOException {
+	public byte[][] compress(Grammar grammar) throws NotSupportedException, IOException {
 		digramSerializer = new DigramSerializerImpl(grammar);
-		byte[] start = compress(grammar.getStart());
+		byte[] start = compress(grammar.getStart(), grammar.getProps());
 		byte[] rules = serializeRules(grammar);
 		byte[] serialized = new byte[start.length+1+rules.length];
 		byte[] startSize = ByteBuffer.allocate(Integer.BYTES).putInt(start.length).array();
-		System.arraycopy(startSize, 0, serialized, 0,Integer.BYTES);
-		System.arraycopy(start, 0, serialized, Integer.BYTES,start.length);
-		System.arraycopy(rules, 0, serialized, Integer.BYTES+start.length, rules.length);
-		return serialized;
+//		System.arraycopy(startSize, 0, serialized, 0,Integer.BYTES);
+//		System.arraycopy(start, 0, serialized, Integer.BYTES,start.length);
+//		System.arraycopy(rules, 0, serialized, Integer.BYTES+start.length, rules.length);;
+		System.out.println("Start graph size: "+start.length+" bytes");
+		System.out.println("Rules size: "+rules.length+" bytes");
+		return new byte[][] {startSize, start, rules};
 	}
 
 	/*
@@ -51,11 +58,11 @@ public class CRSCompressor implements GrammarCompressor {
 	@Override
 	public byte[] serializeRules(Grammar grammar) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Map<String, Digram> rules = grammar.getRules();
-		List<Digram> digrams = new LinkedList<Digram>();
+		Map<Integer, Digram> rules = grammar.getRules();
+		List<Digram> digrams = new ArrayList<Digram>();
 		//add digrams in order of the Non Terminals, thus it is reversable without saving NT
-		for(Integer i=0;i<rules.size();i++) {
-			digrams.add(rules.get(GrammarHelper.NON_TERMINAL_PREFIX+i.toString()));
+		for(Integer i : rules.keySet()) {
+			digrams.add(rules.get(i));
 		}
 		for(Digram digram : digrams) {
 			byte[] serRule = digramSerializer.serialize(digram);
@@ -67,22 +74,23 @@ public class CRSCompressor implements GrammarCompressor {
 	
 
 	@Override
-	public byte[] compress(Model graph) throws NotSupportedException {
-		Long noOfProperties = RDFHelper.getPropertyCount(graph);
+	public byte[] compress(Grph g, BoundedList pIndex) throws NotSupportedException {
+		//Long noOfProperties = RDFHelper.getPropertyCount(graph);
+		Integer noOfProperties = pIndex.size();
 		byte[] ret = null;
 		if(noOfProperties == null) {
 			return null;
 		}
 		if(noOfProperties<=Byte.MAX_VALUE) {
-			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(graph);
+			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
 			ret = createCRS(matrix, Byte.class);
 		}
 		if(noOfProperties<=Short.MAX_VALUE) {
-			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(graph);
+			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
 			ret = createCRS(matrix, Short.class);
 		}
 		if(noOfProperties<=Integer.MAX_VALUE) {
-			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(graph);
+			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
 			ret = createCRS(matrix, Integer.class);
 		}
 		else {

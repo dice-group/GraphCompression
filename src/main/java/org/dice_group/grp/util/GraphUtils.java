@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import grph.Grph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -44,23 +45,20 @@ public class GraphUtils {
 	 * thus optimizing it for sparse matrices
 	 * 
 	 * 
-	 * @param <T>
-	 * @param m
 	 * @return
 	 */
-	public static List<List<Integer[]>> createIntegerRCMatrix(Model m){
+	public static List<List<Integer[]>> createIntegerRCMatrix(Grph g){
 		List<List<Integer[]>> ret = new LinkedList<List<Integer[]>>();
 		Map<Integer, List<Integer[]>> map = new HashMap<Integer, List<Integer[]>>();
 
 		
 		long size=0;
 		// create mapping with this
-		StmtIterator stmtI = m.listStatements();
-		while(stmtI.hasNext()) {
-			Statement stmt = stmtI.next();
-			Integer s = getRDFIndex(stmt.getSubject());
-			Integer p = getRDFIndex(stmt.getPredicate());
-			Integer o = getRDFIndex(stmt.getObject());
+		for(int edge : g.getEdges()){
+			//Statement stmt = stmtI.next();
+			Integer s = g.getDirectedSimpleEdgeHead(edge);
+			Integer p = edge;
+			Integer o = g.getDirectedSimpleEdgeTail(edge);
 			size = Math.max(o, Math.max(size, s));
 			if(map.containsKey(s)) {
 				map.get(s).add(new Integer[] {o,p});
@@ -96,15 +94,15 @@ public class GraphUtils {
 			for(Integer[] col : row) {
 				Resource s = ResourceFactory.createResource(":s"+rowPtr);
 				// check if nonTerminal
-				Property p = ResourceFactory.createProperty(":p"+col[0]);
+				Property p = ResourceFactory.createProperty(":p"+col[1]);
 				if(dict !=null){
-					Node n = dict.getNode(col[0], TripleComponentRole.PREDICATE);
+					Node n = dict.getNode(col[1], TripleComponentRole.PREDICATE);
 					if(n.toString().matches(":n[0-9]+")) {
 						// nterminal
 						p = ResourceFactory.createProperty(n.toString());
 					}
 				}
-				Resource o = ResourceFactory.createResource(":o"+col[1]);
+				Resource o = ResourceFactory.createResource(":o"+col[0]);
 				m.add(s, p, o);
 			}
 			rowPtr++;

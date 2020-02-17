@@ -28,8 +28,8 @@ import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdtjena.NodeDictionary;
 
-public class URIBasedSearcher implements Searcher{
-
+public class URIBasedSearcher {
+/*
 	private DictionaryPrivate dict;
 	private NodeDictionary nodeDict;
 
@@ -171,5 +171,5 @@ public class URIBasedSearcher implements Searcher{
 		}
 		return realMap;
 	}
-
+*/
 }

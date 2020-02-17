@@ -1,7 +1,9 @@
 package org.dice_group.grp.util;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
@@ -56,8 +58,8 @@ public class RDFHelper {
 	 * @param queryExecution
 	 * @return
 	 */
-	public static List<QuerySolution> selectModel (QueryExecution queryExecution) {
-		List<QuerySolution> querySolutionList = new ArrayList<QuerySolution>();
+	public static Set<QuerySolution> selectModel (QueryExecution queryExecution) {
+		Set<QuerySolution> querySolutionList = new HashSet<QuerySolution>();
 	    ResultSet resultSet = queryExecution.execSelect();
 	    while(resultSet.hasNext()) {
 			querySolutionList.add(resultSet.next());

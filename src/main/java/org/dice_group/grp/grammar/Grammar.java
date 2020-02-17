@@ -5,35 +5,42 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import grph.Grph;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.grammar.digram.DigramOccurence;
+import org.dice_group.grp.util.BoundedList;
 
 public class Grammar {
 
 
-	private Model start;
-	private Map<String, Digram> rules = new HashMap<String, Digram>();
-	private Map<Digram, List<DigramOccurence>> replaced = new HashMap<Digram, List<DigramOccurence>>();
+	private Grph start;
 
-	public Grammar(Model start) {
+
+	private BoundedList props;
+	private Map<Integer, Digram> rules = new HashMap<Integer, Digram>();
+	private Map<Digram, List<DigramOccurence>> replaced = new HashMap<Digram, List<DigramOccurence>>();
+	private List<RDFNode> soIndex;
+
+	public Grammar(Grph start) {
 		this.start = start;
 	}
 	
-	public void setStart(Model start) {
+	public void setStart(Grph start) {
 		this.start =start;
 	}
 	
 	
-	public Grammar(Map<String, Digram> rules) {
+	public Grammar(Map<Integer, Digram> rules) {
 		this.rules = rules;
 	}
 	
-	public Map<String, Digram> getRules() {
+	public Map<Integer, Digram> getRules() {
 		return rules;
 	}
 
-	public void setRules(Map<String, Digram> rules) {
+	public void setRules(Map<Integer, Digram> rules) {
 		this.rules = rules;
 	}
 	
@@ -41,16 +48,16 @@ public class Grammar {
 		return this.rules.get(nonTerminal);
 	}
 	
-	public Model getStart() {
+	public Grph getStart() {
 		return this.start;
 	}
 
-	public void addRule(String lhs,  Digram rhs) {
+	public void addRule(Integer lhs,  Digram rhs) {
 		this.rules.put(lhs, rhs);
 	}
 	
 	
-	public Set<String> getNonTerminals(){
+	public Set<Integer> getNonTerminals(){
 		return rules.keySet();
 	}
 
@@ -62,7 +69,21 @@ public class Grammar {
 		this.replaced = replaced;
 	}
 
-	
 
-	
+	public BoundedList getProps() {
+		return props;
+	}
+
+	public void setProps(BoundedList props) {
+		this.props = props;
+	}
+
+
+    public void setSOIndex(List<RDFNode> soIndex) {
+		this.soIndex = soIndex;
+    }
+
+	public List<RDFNode> getSOIndex() {
+		return this.soIndex;
+	}
 }
