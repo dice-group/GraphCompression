@@ -3,19 +3,21 @@ package org.dice_group.grp.compression.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 import grph.Grph;
 import grph.in_memory.InMemoryGrph;
+import org.apache.jena.ext.com.google.common.collect.Lists;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.tdb.index.Index;
+import org.dice_group.grp.compression.AbstractGrammarCompressor;
 import org.dice_group.grp.compression.GrammarCompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
 import org.dice_group.grp.grammar.GrammarHelper;
+import org.dice_group.grp.grammar.Statement;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.index.impl.InternalIndexer;
 import org.dice_group.grp.serialization.DigramSerializer;
@@ -24,9 +26,12 @@ import org.dice_group.grp.serialization.impl.CRSSerializer;
 import org.dice_group.grp.serialization.impl.DigramSerializerImpl;
 import org.dice_group.grp.util.BoundedList;
 import org.dice_group.grp.util.GraphUtils;
+import org.dice_group.grp.util.IndexedRDFNode;
 import org.dice_group.grp.util.RDFHelper;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdtjena.NodeDictionary;
 
-public class CRSCompressor implements GrammarCompressor {
+public class CRSCompressor extends AbstractGrammarCompressor {
 
 	public static final byte TERMINAL_SPLIT = '.';
 	public static final byte SINGLE_DOUBLE_SPLIT = '\t';
@@ -34,63 +39,33 @@ public class CRSCompressor implements GrammarCompressor {
 	
 	private GraphSerializer serializer = new CRSSerializer();
 
-	private DigramSerializerImpl digramSerializer;
-	
-	@Override
-	public byte[][] compress(Grammar grammar) throws NotSupportedException, IOException {
-		digramSerializer = new DigramSerializerImpl(grammar);
-		byte[] start = compress(grammar.getStart(), grammar.getProps());
-		byte[] rules = serializeRules(grammar);
-		byte[] serialized = new byte[start.length+1+rules.length];
-		byte[] startSize = ByteBuffer.allocate(Integer.BYTES).putInt(start.length).array();
-//		System.arraycopy(startSize, 0, serialized, 0,Integer.BYTES);
-//		System.arraycopy(start, 0, serialized, Integer.BYTES,start.length);
-//		System.arraycopy(rules, 0, serialized, Integer.BYTES+start.length, rules.length);;
-		System.out.println("Start graph size: "+start.length+" bytes");
-		System.out.println("Rules size: "+rules.length+" bytes");
-		return new byte[][] {startSize, start, rules};
-	}
 
-	/*
-	 * 
-	 * 
-	 */
-	@Override
-	public byte[] serializeRules(Grammar grammar) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Map<Integer, Digram> rules = grammar.getRules();
-		List<Digram> digrams = new ArrayList<Digram>();
-		//add digrams in order of the Non Terminals, thus it is reversable without saving NT
-		for(Integer i : rules.keySet()) {
-			digrams.add(rules.get(i));
-		}
-		for(Digram digram : digrams) {
-			byte[] serRule = digramSerializer.serialize(digram);
-			baos.write(serRule);
-		}
-		return baos.toByteArray();
-	}
-	
+
 	
 
 	@Override
-	public byte[] compress(Grph g, BoundedList pIndex) throws NotSupportedException {
+	public byte[] compress(List<Statement> g, Grph graph, BoundedList pIndex) throws NotSupportedException {
 		//Long noOfProperties = RDFHelper.getPropertyCount(graph);
-		Integer noOfProperties = pIndex.size();
+		Integer noOfProperties=0;
+
+
+		for(IndexedRDFNode pI : pIndex){
+			noOfProperties = Math.max(noOfProperties, pI.getHdtIndex());
+		}
 		byte[] ret = null;
 		if(noOfProperties == null) {
 			return null;
 		}
 		if(noOfProperties<=Byte.MAX_VALUE) {
-			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
-			ret = createCRS(matrix, Byte.class);
+			Map<Integer, List<Integer[]>>  matrix = GraphUtils.createIntegerRCMatrix(g);
+			ret = createCRS(matrix, Integer.class);
 		}
-		if(noOfProperties<=Short.MAX_VALUE) {
-			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
+		else if(noOfProperties<=Short.MAX_VALUE) {
+			Map<Integer, List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
 			ret = createCRS(matrix, Short.class);
 		}
-		if(noOfProperties<=Integer.MAX_VALUE) {
-			List<List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
+		else if(noOfProperties<=Integer.MAX_VALUE) {
+			Map<Integer, List<Integer[]>> matrix = GraphUtils.createIntegerRCMatrix(g);
 			ret = createCRS(matrix, Integer.class);
 		}
 		else {
@@ -99,21 +74,38 @@ public class CRSCompressor implements GrammarCompressor {
 		return ret;
 	}
 
-	public  <T extends Number>  byte[] createCRS(List<List<T[]>> matrix, Class<? extends Number> noFormat) {
+	public  <T extends Number>  byte[] createCRS(Map<Integer, List<Integer[]>> matrix, Class<? extends Number> noFormat) {
 		List<T> val = new LinkedList<T>();
 		List<Integer> colRow = new LinkedList<Integer>();
 		List<Integer> rowPtr = new LinkedList<Integer>();
 		rowPtr.add(0);
-		for(int i=0;i<matrix.size();i++) {
-			List<T[]> currentRow = matrix.get(i);
-			int rowPtrCount = 0;
-			for(int j=0;j<currentRow.size();j++) {
-				T[] cell = currentRow.get(j);
-				if(cell[1].longValue()>0) {
-					val.add(cell[1]);
-					colRow.add(cell[0].intValue());
-					rowPtrCount++;
+		List<Integer> keys = Lists.newArrayList(matrix.keySet());
+		Set<Integer> props = new HashSet<Integer>();
+		Collections.sort(keys);
+
+		int rowPtrCount = 0;
+		for(int i=0;i<keys.get(keys.size()-1);i++) {
+
+			if(matrix.containsKey(i)) {
+				List<Integer[]> currentRow = matrix.get(i);
+				for (int j = 0; j < currentRow.size(); j++) {
+					Integer[] cell = currentRow.get(j);
+					if (cell[1].longValue() > 0) {
+						if (noFormat == Short.class) {
+							val.add((T) Short.valueOf(cell[1].shortValue()));
+							props.add(cell[1]);
+						} else if (noFormat == Integer.class) {
+							val.add((T) Integer.valueOf(cell[1].intValue()));
+						}
+						if(cell[0]==-1){
+							System.out.println();
+						}
+						colRow.add(cell[0]);
+						rowPtrCount++;
+					}
 				}
+			}
+			else{
 			}
 			rowPtr.add(rowPtrCount);
 		}

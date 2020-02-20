@@ -1,9 +1,6 @@
 package org.dice_group.grp.grammar;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import grph.Grph;
 import org.apache.jena.rdf.model.Model;
@@ -22,6 +19,9 @@ public class Grammar {
 	private Map<Integer, Digram> rules = new HashMap<Integer, Digram>();
 	private Map<Digram, List<DigramOccurence>> replaced = new HashMap<Digram, List<DigramOccurence>>();
 	private List<RDFNode> soIndex;
+
+
+	private List<Statement> stmts =new ArrayList<Statement>();
 
 	public Grammar(Grph start) {
 		this.start = start;
@@ -86,4 +86,16 @@ public class Grammar {
 	public List<RDFNode> getSOIndex() {
 		return this.soIndex;
 	}
+
+	public List<Statement> getStmts() {
+		return stmts;
+	}
+
+	public void setStmts(List<Statement> stmts) {
+		this.stmts = stmts;
+	}
+
+
 }
+
+

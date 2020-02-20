@@ -40,7 +40,7 @@ public class DigramSerializerImpl implements DigramSerializer {
 		// TODO for some reaseon getReplaced wont work here 
 		List<Long[]> internals = getInternalIndexes(grammar.getReplaced().get(m));
 
-		byte sizeFlag = 0;//getSizeFlag(internals);
+		byte sizeFlag = getSizeFlag(internals);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		
 		for(Long[] occInternals : internals) {
@@ -49,10 +49,14 @@ public class DigramSerializerImpl implements DigramSerializer {
 					baos.write(internal.byteValue());
 				}
 				else if(sizeFlag==1) {
-					baos.write(internal.shortValue());
+					ByteBuffer bb = ByteBuffer.allocate(Short.BYTES);
+					bb.putShort(internal.shortValue());
+					baos.write(bb.array());
 				}
 				else if(sizeFlag==2) {
-					baos.write(internal.intValue());
+					ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES);
+					bb.putInt(internal.intValue());
+					baos.write(bb.array());
 				}
 				else {
 					baos.write(ByteBuffer.allocate(Long.BYTES).putLong(internal).array());
@@ -88,6 +92,15 @@ public class DigramSerializerImpl implements DigramSerializer {
 
 			@Override
 			public int compare(DigramOccurence arg0, DigramOccurence arg1) {
+				//TODO sort externals: s1 s2 o1 o2
+				for(int x=0;x<arg0.getExternals().size();x++){
+					int r = arg0.getExternals().get(x).compareTo(arg1.getExternals().get(x));
+					if(r!=0){
+						return r;
+					}
+				}
+				return 0;
+				/*
 				StringBuilder b1 = new StringBuilder();
 				for(int n : arg0.getExternals()) {
 					b1.append(n+" ");
@@ -98,6 +111,7 @@ public class DigramSerializerImpl implements DigramSerializer {
 				}
 	
 				return b1.toString().compareTo(b2.toString());
+				*/
 			}
 			
 		});

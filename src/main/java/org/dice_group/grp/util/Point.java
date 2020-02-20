@@ -42,4 +42,9 @@ public class Point {
         return (row+" "+col).hashCode();
     }
 
+    @Override
+    public String toString(){
+        return "Row: "+this.getRow() +" , Col: "+this.getCol();
+    }
+
 }

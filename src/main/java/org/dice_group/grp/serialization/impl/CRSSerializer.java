@@ -2,6 +2,7 @@ package org.dice_group.grp.serialization.impl;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.List;
 
 import org.dice_group.grp.serialization.GraphSerializer;
@@ -30,45 +31,54 @@ public class CRSSerializer <T> implements GraphSerializer{
 	}
 
 	public  byte[] serializeLongList(List<Long> l) {
-		byte[] ser = new byte[l.size()*Long.BYTES];
+		byte[] ser = new byte[1+l.size()*Long.BYTES];
+		ser[0]=3;
 		for(int i=0;i<l.size()*Long.BYTES;) {
 			byte[] curI = ByteBuffer.allocate(Long.BYTES).putLong(l.get(i/Long.BYTES)).array();
 			for(byte b : curI) {
-				ser[i++] = b;
+				ser[1+i++] = b;
 			}
 		}
 		return ser;
 	}	
 	
 	public  byte[] serializeIntegerList(List<Integer> l) {
-		byte[] ser = new byte[l.size()*Integer.BYTES];
+		byte[] ser = new byte[1+l.size()*Integer.BYTES];
+		ser[0]=2;
 		for(int i=0;i<l.size()*Integer.BYTES;) {
 			
 			byte[] curI = ByteBuffer.allocate(Integer.BYTES).putInt(l.get(i/Integer.BYTES)).array();
 			for(byte b : curI) {
-				ser[i++] = b;
+				ser[1+i++] = b;
 			}
 		}
 		return ser;
 	}	
 	
 	public  byte[] serializeShortList(List<Short> l) {
-		byte[] ser = new byte[l.size()*Short.BYTES];
+		HashSet<Short> props = new HashSet<Short>();
+		for(Short s : l){
+			props.add(s);
+		}
+
+		byte[] ser = new byte[1+l.size()*Short.BYTES];
+		ser[0]=1;
 		for(int i=0;i<l.size()*Short.BYTES;) {
 			byte[] curI = ByteBuffer.allocate(Short.BYTES).putShort(l.get(i/Short.BYTES)).array();
 			for(byte b : curI) {
-				ser[i++] = b;
+				ser[1+i++] = b;
 			}
 		}
 		return ser;
 	}	
 	
 	public  byte[] serializeByteList(List<Byte> l) {
-		byte[] ser = new byte[l.size()*Byte.BYTES];
+		byte[] ser = new byte[1+l.size()*Byte.BYTES];
+		ser[0]=0;
 		for(int i=0;i<l.size()*Byte.BYTES;) {
 			byte[] curI = ByteBuffer.allocate(Byte.BYTES).put(l.get(i)).array();
 			for(byte b : curI) {
-				ser[i++] = b;
+				ser[1+i++] = b;
 			}
 		}
 		return ser;

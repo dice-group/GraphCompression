@@ -8,6 +8,7 @@ import java.util.*;
 
 import grph.Grph;
 import grph.in_memory.InMemoryGrph;
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
@@ -35,8 +36,11 @@ import org.dice_group.grp.util.DigramOccurenceComparator;
 import org.dice_group.grp.util.IndexedRDFNode;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.hdt.HDTVocabulary;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.rdf.parsers.JenaNodeFormatter;
+import org.rdfhdt.hdtjena.NodeDictionary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +67,15 @@ public class RDFCompressor {
 		TempDictionary dict = DictionaryFactory.createTempDictionary(spec);
 
 		Grammar grammar = createGrammar(graph, rdfFile);
+		Map<Integer, Integer> map= new HashMap<Integer, Integer>();
+		for (int edge : grammar.getStart().getEdges()){
+			String uri = grammar.getProps().getBounded(edge).getRDFNode().asNode().getURI();
+			if(uri.startsWith(GrammarHelper.NON_TERMINAL_PREFIX)) {
+				Integer i = Integer.valueOf(uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
+				map.putIfAbsent(i, 0);
+				map.put(i, map.get(i) + 1);
+			}
+		}
 
 		IntBasedIndexer indexer = new IntBasedIndexer(dict);
 		grammar = indexer.indexGrammar(grammar);
@@ -79,10 +92,11 @@ public class RDFCompressor {
 		List<RDFNode> soIndex= new ArrayList<RDFNode>();
 		BoundedList pIndex = new BoundedList();
 		Grph g = this.rdfToGrph(graph, soIndex, pIndex, new InMemoryGrph());
+
 		Grammar grammar = new Grammar(g);
 		grammar.setProps(pIndex);
 		grammar.setSOIndex(soIndex);
-		GrammarHelper.setStartIndexForNT(pIndex.getHighestBound());
+		GrammarHelper.setStartIndexForNT(pIndex.getHighestBound()+1);
 
 		long e = Calendar.getInstance().getTimeInMillis();
 		System.out.println("converting took " + (e - s) + " ms");
@@ -157,6 +171,15 @@ public class RDFCompressor {
 				i++;
 				occCount += digrams.get(d).size();
 			}
+			Map<Integer, Integer> map= new HashMap<Integer, Integer>();
+			for (int edge : grammar.getStart().getEdges()){
+				String uri = grammar.getProps().getBounded(edge).getRDFNode().asNode().getURI();
+				if(uri.startsWith(GrammarHelper.NON_TERMINAL_PREFIX)) {
+					Integer ix = Integer.valueOf(uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
+					map.putIfAbsent(ix, 0);
+					map.put(ix, map.get(ix) + 1);
+				}
+			}
 			System.out.println(i + " Digrams with " + occCount + " Occurences.");
 		}
 		System.out.println("Start size " + grammar.getStart().getEdges().size() + " to original size " + origSize + " [ratio: "
@@ -192,6 +215,8 @@ public class RDFCompressor {
 		Integer firstNT=-1;
 		// sort collection first so we can decompress in the same order
 		Collections.sort(collection, new DigramOccurenceComparator());
+		String uri =GrammarHelper.getNextNonTerminal();
+
 		for(DigramOccurence occ : collection){
 			if(occ==null){
 				continue;
@@ -204,7 +229,7 @@ public class RDFCompressor {
 			if(first){
 				firstNT=nt;
 				node.setLowerBound(nt);
-				node.setRDFNode(ResourceFactory.createResource(":n"+firstNT));
+				node.setRDFNode(ResourceFactory.createResource(uri));
 				pIndex.add(node);
 				first=false;
 			}
@@ -240,69 +265,9 @@ public class RDFCompressor {
 				g.addSimpleEdge(s, nt ,o, true);
 			}
 		}
+
 		return firstNT;
-		/*
-		Property p = ResourceFactory.createProperty(uriNT);
-		List<DigramOccurence> replaced = new LinkedList<DigramOccurence>();
-		for (DigramOccurence docc : collection) {
-			Statement stmt = getReplacingStatement(uriNT, docc);
-			if (stmt != null && stmt.getSubject() != null && stmt.getObject() != null) {
-				replaced.add(docc);
-				//get s and o Index, remove edge, for digram and remove vertexes
-				int s = soIndex.indexOf(docc.getEdge1().getSubject());
-				int o = soIndex.indexOf(docc.getEdge1().getObject());
-				g.removeEdge(s, o);
-				s = soIndex.indexOf(docc.getEdge2().getSubject());
-				o = soIndex.indexOf(docc.getEdge2().getObject());
-				g.removeEdge(s, o);
-				long oldSize = m.size();
-				long newSize = m.remove(docc.getEdge1()).remove(docc.getEdge2()).size();
-				for(RDFNode internal : docc.getInternals()) {
-					int i = soIndex.indexOf(internal);
-					if(i <0){
-						System.err.println("Should not have happend: "+internal+" not found in Index");
-					}
-					g.removeVertices(i);
-				}
-				m.add(stmt);
-				newSize = m.remove(docc.getEdge1()).remove(docc.getEdge2()).size();
 
-				//check = g.addVertex(stmt.getSubject());
-				//check = g.addVertex(stmt.getObject());
-				Integer le = new LabledEdge(stmt.getPredicate().toString());
-				//add new predicate to pIndex and add new Edge
-				s = soIndex.indexOf(stmt.getSubject());
-				IndexedRDFNode iNode = new IndexedRDFNode();
-				iNode.setRDFNode(stmt.getPredicate());
-				int i = pIndex.indexOf(iNode);
-				int newP = pIndex.getHighestBound()+1;
-				if(i>-1){
-					// if exists, just set upper bound
-					iNode = pIndex.get(i);
-					iNode.setUpperBound(iNode.getUpperBound()+1);
-				}
-				else{
-					iNode.setLowerBound(newP);
-					iNode.setUpperBound(newP);
-				}
-				pIndex.add(iNode);
-				o = soIndex.indexOf(stmt.getObject());
-				g.addSimpleEdge(s, newP ,o, true);
-
-				checkEdges.add(le);
-			}
-			// 3 external nodes.
-			// not possible in RDF if i am correct without adding a node, which makes it
-			// only bigger
-			if (docc.getExternals().size() > 2) {
-				throw new NotAllowedInRDFException("Digrams cannot have more than 2 externals in RDF");
-			}
-			// docc.getExternals();
-			// graph.add(graph);
-		}
-
-		return replaced;
-		*/
 	}
 	/*
         /**
@@ -358,7 +323,7 @@ public class RDFCompressor {
 		RDFNode oldP = null;
 		Map<Integer, Integer> nodeID = new HashMap<Integer, Integer>();
 		for(Statement stmt : stmts){
-			//TODO index: use Strings, as jena don't uses lang and xsd for hashCode
+
 			int s = getNodeIndex(stmt.getSubject(), soIndex, nodeID);
 			IndexedRDFNode iNode = new IndexedRDFNode();
 			iNode.setRDFNode(stmt.getPredicate());
@@ -392,7 +357,7 @@ public class RDFCompressor {
 
 	private int getNodeIndex(RDFNode node, List<RDFNode> index, Map<Integer, Integer> nodeID) {
 		// int n = index.indexOf(node);
-		int hash = node.toString().hashCode();
+		int hash = JenaNodeFormatter.format(node.asNode()).hashCode();
 		if(nodeID.containsKey(hash)){
 			return nodeID.get(hash);
 		}

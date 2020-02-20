@@ -590,8 +590,9 @@ public class DigramHelper<T>{
 		return sortedDigrams;
 	}
 
-	//TODO also duplicates from the occurences. This is good, but we also need to purge the occurence list beforehand
+	// also duplicates from the occurences. This is good, but we also need to purge the occurence list beforehand
 	public  void removeOverlappingOcc(List<Digram> freq, Map<Digram, Collection<DigramOccurence>> map) {
+		//TODO this is sadly TSP, we just use a greedy algorithm here. should be the best option though.
 		Set<Integer> occuredEdges = new HashSet<Integer>();
 		Set<Digram> remove = new HashSet<Digram>();
 		for(Digram d : freq) {
@@ -670,7 +671,6 @@ public class DigramHelper<T>{
 
 
 
-	//TODO we get self referencing digrams (like 1 - e1 - 2, 1 -e1 - 2
 	public  Map<Digram, Collection<DigramOccurence>> findNewMappingsVertex(Grph g, Set<Integer> le, BoundedList pIndex) {
 		Map<Digram, Collection<DigramOccurence>> map = new HashMap<Digram, Collection<DigramOccurence>>();
 		Map<Digram, Set<Integer>> alreadyInMap = new HashMap<Digram, Set<Integer>>();

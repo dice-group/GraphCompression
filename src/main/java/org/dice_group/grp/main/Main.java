@@ -47,7 +47,16 @@ public class Main {
 			}
 		}
 		else if(args[0].equals("-d")) {
-			decompress(args[2], args[3]);
+			if(args[1].toLowerCase().equals("-crs")){
+				decompress(args[2], args[3], false);
+			}
+			else if(args[1].toLowerCase().equals("-kd2")){
+				decompress(args[2], args[3], true);
+			}
+			else{
+				printHelp();
+				return;
+			}
 		}
 		else {
 			printHelp();
@@ -82,9 +91,13 @@ public class Main {
 
 	}
 	
-	public static void decompress(String input, String output) throws IOException {
+	public static void decompress(String input, String output, boolean kd2decompressor) throws IOException, NotSupportedException {
 		RDFDecompressor c = new RDFDecompressor();
-		Model m = c.decompress(input);
+		System.out.println("start decompression of "+input+" with size "+new File(input).length()+" bytes");
+		long start = Calendar.getInstance().getTimeInMillis();
+		Model m = c.decompress(input, kd2decompressor);
+		long end = Calendar.getInstance().getTimeInMillis();
+		System.out.println("Decompression of "+input+" with size "+new File(input).length()+" bytes to "+output+" with size "+output.length()+" bytes took "+(end-start)+" ms");
 		FileWriter f = new FileWriter(output);
 		m.write(f, "TURTLE");
 	}

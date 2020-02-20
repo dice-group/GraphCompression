@@ -1,86 +1,121 @@
 package org.dice_group.grp.decompression.rdf;
 
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
 import org.dice_group.grp.decompression.GRPReader;
+import org.dice_group.grp.decompression.GrammarDecompressor;
+import org.dice_group.grp.decompression.impl.CRSDecompressor;
+import org.dice_group.grp.decompression.impl.KD2TreeDecompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.GrammarHelper;
+import org.dice_group.grp.grammar.Statement;
 import org.dice_group.grp.grammar.digram.Digram;
+import org.dice_group.grp.grammar.digram.DigramOccurence;
 import org.dice_group.grp.index.impl.URIBasedSearcher;
+import org.dice_group.grp.serialization.impl.DigramDeserializer;
+import org.dice_group.grp.util.GraphUtils;
 import org.rdfhdt.hdt.dictionary.impl.PSFCFourSectionDictionary;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdt.hdt.HDTVocabulary;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.rdf.parsers.JenaNodeFormatter;
+import org.rdfhdt.hdtjena.NodeDictionary;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public class RDFDecompressor {
 
-    public Model decompress(String file) {
+    public Model decompress(String file, boolean kd2Decompressor) throws IOException, NotSupportedException {
+        GrammarDecompressor dcmpr;
+        if(kd2Decompressor){
+             dcmpr = new KD2TreeDecompressor();
+        }
+        else{
+            dcmpr = new CRSDecompressor();
+        }
+
         HDTSpecification spec = new HDTSpecification();
-//		spec.set("dictionary.type", HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION);
+		spec.set("dictionary.type", HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION);
 
         PSFCFourSectionDictionary dict = new PSFCFourSectionDictionary(spec);
-/*
-        try {
-            Map<Digram, List<Integer[]>> internalMap = new HashMap<Digram, List<Integer[]>>();
-            Grammar g = GRPReader.load(file, dict, internalMap);
-            URIBasedSearcher searcher = new URIBasedSearcher(dict);
-            searcher.deindexGrammar(g);
-            Map<Digram, List<List<RDFNode>>> realMap = searcher.deindexInternalMap(internalMap);
-            return decompressGrammar(g, realMap);
-        } catch (NotSupportedException | IOException e) {
-            e.printStackTrace();
-        }
-        */
-
-        return null;
+        byte[] grammar = GRPReader.load(file, dict);
+        return decompressFull(grammar, new NodeDictionary(dict), dcmpr);
     }
 
-    /**
-     * iterates through the grammar's rules and decompresses the statements
-     * pertinent to each digram
-     *
-     * @param grammar
-     * @param realMap
-     * @return
-     */
-    public Model decompressGrammar(Grammar grammar, Map<Digram, List<List<RDFNode>>> realMap) {
-       /* Model graph = ModelFactory.createDefaultModel();
-        graph.add(grammar.getStart());
+    public Model decompressFull(byte[] arr, NodeDictionary dict, GrammarDecompressor dcmpr) throws IOException, NotSupportedException {
+        //startSize, start, rules
+        //1. 4 bytes = length of start := X
+        ByteBuffer bb = ByteBuffer.wrap(arr);
+        byte[] startBytes = new byte[4];
+        bb.get(startBytes);
+        int startSize = ByteBuffer.wrap(startBytes).getInt();
+        //2. X bytes = start Graph
+        byte[] start = new byte[startSize];
+        bb = bb.slice();
+        bb.get(start);
+        //rather a mapping Map<Integer, List<Statement>>
+        List<org.dice_group.grp.grammar.Statement> nonTerminalEdges = new ArrayList<org.dice_group.grp.grammar.Statement>();
+        Model startGraph = dcmpr.decompressStart(start, dict, nonTerminalEdges);
 
-        Map<String, Digram> rules = grammar.getRules();
-        rules.forEach((uriNT, digram) -> {
-            replaceStmts(uriNT, digram, graph, realMap.get(digram));
-        });*/
-        return null;
-    }
 
-    /**
-     * substitutes the compressed statement with the original statements
-     *
-     */
-    private void replaceStmts(String uriNT, Digram digram, Model graph, List<List<RDFNode>> internals) {
-        List<Statement> stmts = graph.listStatements(null, ResourceFactory.createProperty(uriNT), (RDFNode) null)
-                .toList();
-        // sort stmts after first and second node alphabetically
-        Collections.sort(stmts, new Comparator<Statement>() {
-
+        Collections.sort(nonTerminalEdges, new Comparator<org.dice_group.grp.grammar.Statement>() {
             @Override
-            public int compare(Statement arg0, Statement arg1) {
-                String e1 = arg0.getSubject().toString() + arg0.getObject().toString();
-                String e2 = arg1.getSubject().toString() + arg1.getObject().toString();
-                return e1.compareTo(e2);
+            public int compare(org.dice_group.grp.grammar.Statement s1, org.dice_group.grp.grammar.Statement s2) {
+                Integer nt1= Integer.valueOf(dict.getNode(s1.getPredicate(), TripleComponentRole.PREDICATE).getURI().replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
+                Integer nt2= Integer.valueOf(dict.getNode(s2.getPredicate(), TripleComponentRole.PREDICATE).getURI().replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
+                int pCT =nt1.compareTo(nt2);
+                if(pCT!=0){
+                    return pCT;
+                }
+                int sCT = s1.getSubject().compareTo(s2.getSubject());
+                if(sCT!=0){
+                    return sCT;
+                }
+                int oCT = s1.getObject().compareTo(s2.getObject());
+                return oCT;
             }
-
         });
-        for (int i = 0; i < stmts.size(); i++) {
-            List<RDFNode> externals = new LinkedList<RDFNode>();
-            externals.add(stmts.get(i).getSubject());
-            externals.add(stmts.get(i).getObject());
-            //DigramOccurence occ = digram.createOccurence(externals, internals.get(i));
-            //graph.remove(stmts.get(i));
-            //graph.add(occ.getEdge1());
-            //graph.add(occ.getEdge2());
+        //3. decompress rules
+        bb = bb.slice();
+        byte[] rules = new byte[arr.length-(Integer.BYTES+startSize)];
+        bb.get(rules);
+        decompressRules(startGraph, rules, dict, nonTerminalEdges, dcmpr.getStartID());
+
+        return startGraph;
+    }
+
+
+    public void decompressRules(Model m, byte[] arr, NodeDictionary dict, List<org.dice_group.grp.grammar.Statement> nonTerminalEdges, int startID) throws IOException {
+        DigramDeserializer dSer = new DigramDeserializer();
+
+        List<Statement> mapping = dSer.decompressRules(arr, dict, startID, nonTerminalEdges);
+        for(int i=0; i<mapping.size();i++){
+            Statement occ = mapping.get(i);
+            addStatement(occ, m, dict);
         }
+
+    }
+
+    private void addStatement(Statement edge, Model m, NodeDictionary dict){
+        Node property = dict.getNode(edge.getPredicate(), TripleComponentRole.PREDICATE);
+        Node subject = dict.getNode(edge.getSubject(), TripleComponentRole.SUBJECT);
+        Node object = dict.getNode(edge.getObject(), TripleComponentRole.SUBJECT);
+
+        RDFNode o;
+        if(object.getURI().startsWith("\\\"") || object.getURI().startsWith("\"")) {
+            //TODO parse Node, what literal it is !!!
+            o = GraphUtils.parseHDTLiteral(object);
+        }
+        else{
+            o = ResourceFactory.createProperty(JenaNodeFormatter.format(object));
+        }
+        m.add(ResourceFactory.createResource(JenaNodeFormatter.format(subject)),
+                ResourceFactory.createProperty(JenaNodeFormatter.format(property)),
+                o);
     }
 
 }

@@ -2,9 +2,11 @@ package org.dice_group.grp.grammar;
 
 public class GrammarHelper {
 
-	public static final String NON_TERMINAL_PREFIX = ":n";
+	public static final String NON_TERMINAL_PREFIX = "http://n.";
 	
 	private static int nonT = 0;
+	private static int nonTi = 0;
+
 
 	/**
 	 * This is our Non Terminal 
@@ -21,10 +23,10 @@ public class GrammarHelper {
 	}
 
 	public static int getNextNonTerminalInt() {
-		return nonT++;
+		return nonTi++;
 	}
 
 	public static void setStartIndexForNT(int ntStart){
-		nonT=ntStart;
+		nonTi=ntStart;
 	}
 }

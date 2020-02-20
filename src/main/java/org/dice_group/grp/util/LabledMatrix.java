@@ -20,6 +20,7 @@ public class LabledMatrix {
         this.labelId = labelId;
     }
 
+
     public Integer getLabelId() {
         return labelId;
     }

@@ -4,18 +4,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.jena.graph.Node;
 import org.dice_group.grp.compression.impl.CRSCompressor;
 import org.dice_group.grp.compression.impl.KD2TreeCompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.Statement;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
+import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.listener.ProgressOut;
 import org.rdfhdt.hdt.options.ControlInfo;
 import org.rdfhdt.hdt.options.ControlInformation;
+import org.rdfhdt.hdtjena.NodeDictionary;
 
 /**
  * Compresses the resulting Grammar and Dictionary into 

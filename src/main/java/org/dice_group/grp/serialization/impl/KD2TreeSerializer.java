@@ -1,86 +1,76 @@
 package org.dice_group.grp.serialization.impl;
 
 import grph.Grph;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.tdb.index.Index;
+import org.dice_group.grp.grammar.Statement;
 import org.dice_group.grp.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static junit.framework.Assert.assertEquals;
+
 public class KD2TreeSerializer{
 
 
-    public byte[] serialize(Grph g, BoundedList propertyIndex) throws IOException {
+    public byte[] serialize(List<Statement> stmts, Grph g, BoundedList propertyIndex) throws IOException {
         Map<Integer, LabledMatrix> matrices = new HashMap<Integer, LabledMatrix>();
         //create matrices
-        Set<Integer> vertices = new HashSet<Integer>();
-        for(int edge : g.getEdges()){
-            vertices.add(g.getDirectedSimpleEdgeHead(edge));
-            vertices.add(g.getDirectedSimpleEdgeTail(edge));
-        }
-        for(IndexedRDFNode node : propertyIndex){
-            for(int edge=node.getLowerBound(); edge< node.getUpperBound();edge++) {
-                //use propertyIndex and use first label for all in the boundedlist, also we need a HDT Index for them
-                if(node.getHdtIndex() == null){
-                    continue;
-                }
-                int edgeIndex = node.getHdtIndex();
+
+        for(Statement stmt : stmts){
+
+                int edgeIndex = stmt.getPredicate();
                 if (!matrices.containsKey(edgeIndex)) {
-                    matrices.put(edgeIndex, new LabledMatrix());
+                    matrices.put(edgeIndex, new LabledMatrix(edgeIndex));
                 }
-                matrices.get(edgeIndex).set(g.getDirectedSimpleEdgeTail(edge), g.getDirectedSimpleEdgeHead(edge));
-            }
+                matrices.get(edgeIndex).set(stmt.getSubject(), stmt.getObject());
+
         }
 
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int x=0;
-        Double size = Math.pow(2, Math.ceil(log(g.getVertices().size(), 2)));
+        Double h = Math.ceil(log(g.getVertices().size(), 2));
+        Double size = Math.pow(2, h);
         for(Integer key : matrices.keySet()){
             LabledMatrix matrix = matrices.get(key);
             List<Integer[]> queue = new ArrayList<Integer[]>();
             KD2Tree tree = new KD2Tree(matrix.getLabelId());
 
-            queue.add(new Integer[]{0, size.intValue(), 0, size.intValue()});
-            //check if dividable
-            while(!queue.isEmpty()) {
-                Integer[] queueItem = queue.remove(0);
+            for(Point p : matrix.getPoints()){
+                //get path
+                int c1=0 ;
+                int r1=0;
+                int c2=size.intValue();
+                int r2=size.intValue();
+                List<Byte> path = new ArrayList<Byte>();
+                for(int i=0;i<h;i++){
+                    Byte node = getNode(p, c1, r1, c2, r2);
+                    path.add(node);
+                    if(node==0){
+                        r2 = (r2 - r1) / 2 + r1;
+                        c2 = (c2 - c1) / 2 + c1;
+                    }
+                    else if(node==1){
+                        ///y=row, x =col
+                        r2 = (r2 - r1) / 2 + r1;
+                        c1 = (c2 - c1) / 2 + c1;
+                    }
+                    else if(node==2){
+                        r1 = (r2 - r1) / 2 + r1;
+                        c2 = (c2 - c1) / 2 + c1;
+                    }
+                    else if(node==3){
+                        r1 = (r2 - r1) / 2 + r1;
+                        c1 = (c2 - c1) / 2 + c1;
+                    }
+                }
 
-                int rowDiv = (queueItem[1] - queueItem[0]) / 2 + queueItem[0];
-                int colDiv = (queueItem[3] - queueItem[2]) / 2 + queueItem[2];
-                // queueItem[3] has to be done the same way, so we have xDiv and yDiv instead one divIndex
-                //except if b-a = 1 if b-a=1 and d-c=1 -> we have a leaf, otherwise: set rowDiv (resp. colDiv) to a (resp. c)
-                if ((queueItem[1] - queueItem[0]) == 0 && (queueItem[3] - queueItem[2]) == 0) {
-                    //leaf we do not have to do anything, as the leaf is already saved, also leafs ==1 are always at the same h level.
-                    continue;
-                }
-                if ((queueItem[1] - queueItem[0]) == 1) {
-                    rowDiv = queueItem[0];
-                } else if ((queueItem[1] - queueItem[0]) % 2 != 0) {
-                    //rowDiv = queueItem[1] - 1;
-                }
-                if ((queueItem[3] - queueItem[2]) == 1) {
-                    colDiv = queueItem[2];
-                } else if ((queueItem[3] - queueItem[2]) % 2 != 0) {
-                   // colDiv = queueItem[3] - 1;
-                }
-                Byte[] vals = containsOne(matrix, rowDiv, colDiv, queueItem[0], queueItem[1], queueItem[2], queueItem[3]);
-                //row column
-                //add nodes to tree, the tree will automatically  save  it correctly.
-                tree.addNodeNeighbor(vals);
-                if (vals[0] > 0) {
-                    queue.add(new Integer[]{queueItem[0], rowDiv , queueItem[2], colDiv });
-                }
-                if (vals[1] > 0) {
-                    queue.add(new Integer[]{queueItem[0], rowDiv, colDiv + 1, queueItem[3]});
-                }
-                if (vals[2] > 0) {
-                    queue.add(new Integer[]{rowDiv +1, queueItem[1], queueItem[2], colDiv });
-                }
-                if (vals[3] > 0) {
-                    queue.add(new Integer[]{rowDiv + 1, queueItem[1], colDiv + 1, queueItem[3]});
-                }
+                tree.addPath(path);
             }
+            tree.merge();
             baos.write(tree.serialize());
             x++;
             if(x%10 ==0)
@@ -89,6 +79,24 @@ public class KD2TreeSerializer{
 
 
         return baos.toByteArray();
+    }
+
+    public Byte getNode(Point p, int c1, int r1, int c2, int r2){
+        int rCenter = (r2 - r1) / 2 + r1;
+        int cCenter = (c2 - c1) / 2 + c1;
+        //TODO >= and > might be a problem at the last point.
+        if(p.getCol()<cCenter && p.getRow() <rCenter){
+            return 0;
+        }
+        if(p.getCol()>=cCenter && p.getRow() <rCenter){
+            return 1;
+        }
+        if(p.getCol()<cCenter && p.getRow() >= rCenter){
+            return 2;
+        }
+        else{
+            return 3;
+        }
     }
 
     /**
@@ -125,41 +133,7 @@ public class KD2TreeSerializer{
         }
 
         return ret;
-/*
-        for(int i=starti;i<=rowDiv  && ret[0]!=1; i++) {
-            for (int j = startj; j <= colDiv; j++) {
-                if (matrix.get(i, j) > 0) {
-                    ret[0] = 1;
-                    break;
-                }
-            }
-        }
-        for(int i=starti;i<=rowDiv  && ret[1]!=1; i++) {
-            for(int j=colDiv+1;j<endj; j++) {
-                if (matrix.get(i,j) > 0){
-                    ret[1]=1;
-                    break;
-                }
-            }
-        }
-        for(int i=rowDiv+1;i<=endi && ret[2]!=1; i++) {
-            for (int j = startj; j <= colDiv; j++) {
-                if (matrix.get(i, j) > 0) {
-                    ret[2] = 1;
-                    break;
-                }
-            }
-        }
-        for(int i=rowDiv+1;i<=endi  && ret[3]!=1; i++) {
-            for(int j=colDiv+1;j<endj; j++) {
-                if (matrix.get(i,j) > 0){
-                    ret[3]=1;
-                    break;
-                }
-            }
-        }
-        return ret;
-        */
+
 
     }
 

@@ -138,7 +138,7 @@ public class DigramOccurence extends Digram {
 	}
 
 	public List<Integer> getInternals() {
-		List<Integer> ret = new LinkedList<Integer>();
+		Set<Integer> ret = new HashSet<Integer>();
 		if (!external.contains(e1.getSubject())) {
 			ret.add(e1.getSubject());
 		}
@@ -157,7 +157,7 @@ public class DigramOccurence extends Digram {
 //		if (!external.contains(e2.getPredicate())) {
 //			ret.add(e2.getPredicate());
 //		}
-		return ret;
+		return new ArrayList<Integer>(ret);
 	}
 
 	public Statement getEdge1() {

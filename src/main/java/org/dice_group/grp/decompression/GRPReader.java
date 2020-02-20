@@ -30,9 +30,8 @@ import org.rdfhdt.hdtjena.NodeDictionary;
 
 public class GRPReader {
 
-	public static Grammar load(String input, DictionaryPrivate dict, Map<Digram, List<Integer[]>> internalMap)
+	public static byte[] load(String input, DictionaryPrivate dict)
 			throws NotSupportedException, IOException {
-		CRSDecompressor decompressor = new CRSDecompressor();
 
 		try (FileInputStream fos = new FileInputStream(input);
 				GzipCompressorInputStream gzip = new GzipCompressorInputStream(fos);
@@ -63,8 +62,7 @@ public class GRPReader {
 					dict.load(bis, ci, new ProgressOut());
 				}
 			}
-			return null;
-			//return decompressor.decompress(grammarArr, new NodeDictionary(dict), internalMap);
+			return grammarArr;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
