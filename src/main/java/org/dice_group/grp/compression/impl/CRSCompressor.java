@@ -44,14 +44,15 @@ public class CRSCompressor extends AbstractGrammarCompressor {
 	
 
 	@Override
-	public byte[] compress(List<Statement> g, Grph graph, BoundedList pIndex) throws NotSupportedException {
+	public byte[] compress(List<Statement> g, int vSize) throws NotSupportedException {
 		//Long noOfProperties = RDFHelper.getPropertyCount(graph);
-		Integer noOfProperties=0;
-
-
-		for(IndexedRDFNode pI : pIndex){
-			noOfProperties = Math.max(noOfProperties, pI.getHdtIndex());
+		Set<Integer> props = new HashSet<Integer>();
+		for(Statement s : g){
+			props.add(s.getPredicate());
 		}
+		Integer noOfProperties=props.size();
+		props.clear();
+
 		byte[] ret = null;
 		if(noOfProperties == null) {
 			return null;

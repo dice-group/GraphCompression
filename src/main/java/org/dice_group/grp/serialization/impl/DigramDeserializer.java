@@ -19,15 +19,18 @@ import java.util.*;
 public class DigramDeserializer {
 
 
-    public int[] oneInternalStructs = new int[] {2,3,5,6,7,8,10,13,14,16,19,20,22,25,26,28,32,33};
+    public int[] oneInternalStructs = new int[] {2,3,5,6,7,8,10,13,14,16,19,20,22,25,26,28,32,33,34,35};
 
-    public int[] externalIndexOne = new int[] {0,1,2,4,5,7,8,9,13,14,15,19,22,23,25,28,29,31,33};
-    public int[] externalIndexTwo = new int[] {0,1,2,4,5,7,10,11,13,16,17,19,20,21,25,26,27,31,32};
-    public int[] externalIndexThree = new int[] {0,1,2,4,6,7,9,14,16,18,19,20,21,26,28,30,31,32};
-    public int[] externalIndexFour = new int[] {0,1,3,4,5,8,10,12,13,14,15,20,22,24,25,26,27,31,32};
+    public int[] externalIndexOne = new int[] {0,1,2,4,5,7,8,9,13,14,15,19,22,23,25,28,29,31,33,34,35,36};
+    public int[] externalIndexTwo = new int[] {0,1,2,4,5,7,10,11,13,16,17,19,20,21,25,26,27,31,32,34,36};
+    public int[] externalIndexThree = new int[] {0,1,2,4,6,7,9,14,16,18,19,20,21,26,28,30,31,32,35,36};
+    public int[] externalIndexFour = new int[] {0,1,3,4,5,8,10,12,13,14,15,20,22,24,25,26,27,31,32,35,36};
 
     //make Digram -> List<Integer[]> mapping and Digram list!
     public List<Statement> decompressRules(byte[] arr, NodeDictionary dict, int startID, List<Statement> nonTerminalEdges) throws IOException {
+        if(arr.length==0){
+            return new ArrayList<Statement>();
+        }
         // create ntMap and queue
         Map<Integer, List<Statement>> ntMap = new HashMap<Integer, List<Statement>>();
         List<Integer> queue;

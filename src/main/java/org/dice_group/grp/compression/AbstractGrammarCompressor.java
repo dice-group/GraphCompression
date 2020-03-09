@@ -1,5 +1,6 @@
 package org.dice_group.grp.compression;
 
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.RDFNode;
 import org.dice_group.grp.exceptions.NotSupportedException;
 import org.dice_group.grp.grammar.Grammar;
@@ -13,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public abstract  class AbstractGrammarCompressor implements GrammarCompressor {
 
@@ -21,7 +23,7 @@ public abstract  class AbstractGrammarCompressor implements GrammarCompressor {
 
 
     @Override
-    public byte[][] compress(Grammar grammar) throws NotSupportedException, IOException {
+    public byte[][] compress(Grammar grammar) throws NotSupportedException, IOException, ExecutionException, InterruptedException {
         digramSerializer = new DigramSerializerImpl(grammar);
         Collections.sort(grammar.getStmts(), new Comparator<Statement>() {
             @Override
@@ -37,7 +39,7 @@ public abstract  class AbstractGrammarCompressor implements GrammarCompressor {
                 return  s1.getPredicate().compareTo(s2.getPredicate());
             }
         });
-        byte[] start = compress(grammar.getStmts(), grammar.getStart(), grammar.getProps());
+        byte[] start = compress(grammar.getStmts(), grammar.getVSize());
         byte[] rules = serializeRules(grammar);
         byte[] serialized = new byte[start.length+1+rules.length];
         byte[] startSize = ByteBuffer.allocate(Integer.BYTES).putInt(start.length).array();
@@ -65,8 +67,8 @@ public abstract  class AbstractGrammarCompressor implements GrammarCompressor {
         //TODO
         for(Integer i : rules.keySet()) {
             IndexedRDFNode iNode = grammar.getProps().getBounded(i);
-            RDFNode node = grammar.getProps().getBounded(i).getRDFNode();
-            String uri =node.asResource().getURI();
+            Node node = grammar.getProps().getBounded(i).getRDFNode();
+            String uri =node.getURI();
             String intStr =  uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, "");
             try {
 

@@ -5,17 +5,24 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 import grph.Grph;
 import grph.in_memory.InMemoryGrph;
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.riot.lang.CollectorStreamRDF;
+import org.apache.jena.riot.system.StreamRDF;
+import org.apache.jena.sparql.core.Quad;
 import org.dice_group.grp.compression.GRPWriter;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
 import org.dice_group.grp.exceptions.NotSupportedException;
@@ -31,15 +38,18 @@ import org.dice_group.grp.index.impl.URIBasedIndexer;
 //import org.jgrapht.graph.DefaultDirectedGraph;
 //import org.jgrapht.graph.DirectedMultigraph;
 //import org.jgrapht.graph.DirectedPseudograph;
-import org.dice_group.grp.util.BoundedList;
-import org.dice_group.grp.util.DigramOccurenceComparator;
-import org.dice_group.grp.util.IndexedRDFNode;
+import org.dice_group.grp.util.*;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
+import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
+import org.rdfhdt.hdt.exceptions.ParserException;
 import org.rdfhdt.hdt.hdt.HDTVocabulary;
 import org.rdfhdt.hdt.options.HDTSpecification;
+import org.rdfhdt.hdt.rdf.RDFParserCallback;
+import org.rdfhdt.hdt.rdf.RDFParserFactory;
 import org.rdfhdt.hdt.rdf.parsers.JenaNodeFormatter;
+import org.rdfhdt.hdt.triples.TripleString;
 import org.rdfhdt.hdtjena.NodeDictionary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,16 +57,31 @@ import org.slf4j.LoggerFactory;
 public class RDFCompressor {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(RDFCompressor.class);
-	private static final long THRESHOLD = 1;
+	private static final long THRESHOLD = 2;
+	private static final long MAX = Integer.MAX_VALUE;
+	private final boolean threaded;
+	private boolean onlyKD = true;
+
+	public RDFCompressor(){
+		this(false);
+	}
+
+	public RDFCompressor(boolean threaded){
+		this.threaded=threaded;
+	}
 
 	public DigramHelper dh3 = new DigramHelper();
-	
-	public File compressRDF(File rdfFile, String out, Boolean kd2Flag)
-			throws NotAllowedInRDFException, NotSupportedException, IOException {
+	private TempDictionary dict;
 
+	public File compressRDF(File rdfFile, String out, Boolean kd2Flag, Boolean onlyKD)
+			throws NotAllowedInRDFException, NotSupportedException, IOException, ExecutionException, InterruptedException {
+		this.onlyKD=onlyKD;
+		Stats.printMemStats();
+		Stats.setCurrentFileName(rdfFile.getName());
 
 		long s = Calendar.getInstance().getTimeInMillis();
-		Model graph = readFileToModel(rdfFile);
+		//Model graph = readFileToModel(rdfFile);
+		SortedSet<PTriple> triples = readFileToTriples(rdfFile);
 		long e = Calendar.getInstance().getTimeInMillis();
 		System.out.println("reading took " + (e - s) + " ms");
 
@@ -64,10 +89,11 @@ public class RDFCompressor {
 		HDTSpecification spec = new HDTSpecification();
 		spec.set("dictionary.type", HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION);
 
-		TempDictionary dict = DictionaryFactory.createTempDictionary(spec);
+		dict = DictionaryFactory.createTempDictionary(spec);
 
-		Grammar grammar = createGrammar(graph, rdfFile);
+		Grammar grammar = createGrammar(triples, rdfFile);
 		Map<Integer, Integer> map= new HashMap<Integer, Integer>();
+		/*
 		for (int edge : grammar.getStart().getEdges()){
 			String uri = grammar.getProps().getBounded(edge).getRDFNode().asNode().getURI();
 			if(uri.startsWith(GrammarHelper.NON_TERMINAL_PREFIX)) {
@@ -76,20 +102,23 @@ public class RDFCompressor {
 				map.put(i, map.get(i) + 1);
 			}
 		}
-
+		*/
+		Stats.printMemStats();
 		IntBasedIndexer indexer = new IntBasedIndexer(dict);
 		grammar = indexer.indexGrammar(grammar);
-		GRPWriter.save(out, grammar, indexer.getDict(), kd2Flag);
+		Stats.printMemStats();
+		System.gc();
+		GRPWriter.save(out, grammar, indexer.getDict(), kd2Flag, threaded);
 		return new File(out);
 	}
 
-	public Grammar createGrammar(Model graph, File f) throws NotAllowedInRDFException, IOException {
+	public Grammar createGrammar(SortedSet<PTriple> graph, File f) throws NotAllowedInRDFException, IOException {
 		long origSize = graph.size();
 
 		long s = Calendar.getInstance().getTimeInMillis();
 
 
-		List<RDFNode> soIndex= new ArrayList<RDFNode>();
+		List<Node> soIndex= new ArrayList<Node>();
 		BoundedList pIndex = new BoundedList();
 		Grph g = this.rdfToGrph(graph, soIndex, pIndex, new InMemoryGrph());
 
@@ -100,6 +129,10 @@ public class RDFCompressor {
 
 		long e = Calendar.getInstance().getTimeInMillis();
 		System.out.println("converting took " + (e - s) + " ms");
+
+		if(onlyKD){
+			return grammar;
+		}
 
 		Map<Digram, List<DigramOccurence>> digrams = dh3.getMappingVertex(g, pIndex);
 
@@ -127,11 +160,9 @@ public class RDFCompressor {
 			if (mfd.getNoOfOccurences() <= THRESHOLD) {
 				break;
 			}
-			if (mfd.getNoOfOccurences() > 100000) {
-				System.out.println("WHAAT");
+			if (mfd.getNoOfOccurences() > MAX) {
+				continue;
 			}
-			//TODO set NT first
-			// we need to set the replaced in the same order
 			Set<Integer> le = new HashSet<Integer>();
 			List<DigramOccurence> replaced = new ArrayList<DigramOccurence>();
 			int uriNT = replaceAllOccurences(digrams.get(mfd), g, le, pIndex, replaced);
@@ -173,7 +204,7 @@ public class RDFCompressor {
 			}
 			Map<Integer, Integer> map= new HashMap<Integer, Integer>();
 			for (int edge : grammar.getStart().getEdges()){
-				String uri = grammar.getProps().getBounded(edge).getRDFNode().asNode().getURI();
+				String uri = grammar.getProps().getBounded(edge).getRDFNode().getURI();
 				if(uri.startsWith(GrammarHelper.NON_TERMINAL_PREFIX)) {
 					Integer ix = Integer.valueOf(uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
 					map.putIfAbsent(ix, 0);
@@ -190,6 +221,7 @@ public class RDFCompressor {
 		System.out.println("Grammar done. Onto indexing & serialization...");
 
 		return grammar;
+
 	}
 
 
@@ -229,7 +261,7 @@ public class RDFCompressor {
 			if(first){
 				firstNT=nt;
 				node.setLowerBound(nt);
-				node.setRDFNode(ResourceFactory.createResource(uri));
+				node.setRDFNode(ResourceFactory.createResource(uri).asNode());
 				pIndex.add(node);
 				first=false;
 			}
@@ -300,6 +332,47 @@ public class RDFCompressor {
 		return ModelFactory.createDefaultModel().read(new FileReader(rdfFile), null, lang.getLabel());
 	}
 
+	private SortedSet<PTriple> readFileToTriples(File rdfFile) throws FileNotFoundException {
+		Lang lang = RDFLanguages.filenameToLang(rdfFile.getName());
+		List<Triple> triples = new ArrayList();
+
+
+		SortedSet<PTriple> set = new TreeSet<PTriple>();
+
+		StreamRDF stream = new StreamRDF() {
+
+			@Override
+			public void start() {
+				set.clear();
+			}
+
+			@Override
+			public void triple(Triple triple) {
+
+				set.add(new PTriple(triple));
+			}
+
+			@Override
+			public void quad(Quad quad) {}
+
+			@Override
+			public void base(String base) {}
+
+			@Override
+			public void prefix(String prefix, String iri) {
+
+			}
+
+			@Override
+			public void finish() {
+			}
+		};
+		RDFDataMgr.parse(stream, new FileInputStream(rdfFile), lang);
+
+
+		return set;
+	}
+
 	/**
 	 * Converts a Jena Model into Grph graph using a map which converts a hash to an RDF Node.
 	 * Thus converting each rdf node into a hash, while we can still access the underlying rdf node.
@@ -310,26 +383,29 @@ public class RDFCompressor {
 	 * @param g Grph to convert to
 	 * @return converter Grph Object
 	 */
-	private Grph rdfToGrph(Model m, List<RDFNode> soIndex, BoundedList propertyIndex, Grph g){
+	private Grph rdfToGrph(SortedSet<PTriple> m, List<Node> soIndex, BoundedList propertyIndex, Grph g){
+		//FIXME This Solution needs too much RAM, iterator and removing is not a good idea, better stream and otf
 		//sort after properties
-		List<Statement> stmts = m.listStatements().toList();
+		/*List<Statement> stmts = m.listStatements().toList();
+		m.remove(stmts);
 		Collections.sort(stmts, new Comparator<Statement>() {
 			@Override
 			public int compare(Statement s1, Statement s2) {
 				return s1.getPredicate().toString().compareTo(s2.getPredicate().toString());
 			}
 		});
-		int p = 0;
-		RDFNode oldP = null;
-		Map<Integer, Integer> nodeID = new HashMap<Integer, Integer>();
-		for(Statement stmt : stmts){
+		*/
 
-			int s = getNodeIndex(stmt.getSubject(), soIndex, nodeID);
+		int p = 0;
+		Node oldP = null;
+		Map<Integer, Integer> nodeID = new HashMap<Integer, Integer>();
+		for(PTriple t : m){
+			int s = getNodeIndex(t.getSubject(), soIndex, nodeID);
 			IndexedRDFNode iNode = new IndexedRDFNode();
-			iNode.setRDFNode(stmt.getPredicate());
+			iNode.setRDFNode(t.getPredicate());
 			//basically just check if the last RDFNode was the same
 			//int i = propertyIndex.indexOf(iNode);
-			if(oldP!=null && oldP.toString().equals(stmt.getPredicate().toString())){
+			if(oldP!=null && oldP.toString().equals(t.getPredicate().toString())){
 				// if exists, just set upper bound
 				iNode = propertyIndex.get(propertyIndex.size()-1);
 				iNode.setUpperBound(iNode.getUpperBound()+1);
@@ -338,34 +414,59 @@ public class RDFCompressor {
 				iNode.setLowerBound(p);
 				iNode.setUpperBound(p);
 				propertyIndex.add(iNode);
-				oldP=stmt.getPredicate();
+				oldP=t.getPredicate();
 			}
 
 			//int p = soIndex.size();
 			//We have to add a unique index for every predicate -> thus having |E| amount of
 			//soIndex.add(stmt.getPredicate());
-			int o = getNodeIndex(stmt.getObject(), soIndex, nodeID);
+			int o = getNodeIndex(t.getObject(), soIndex, nodeID);
 
 			//soIndex.add(stmt.getSubject());
 			//soIndex.add(stmt.getObject());
 			g.addSimpleEdge(s, p++, o,
 					true);
-
+			if(p% 100000 ==0){
+				System.out.println("Converted "+p+" edges");
+			}
 		}
+		//Stats.printStats(g, propertyIndex);
+		m.clear();
 		return g;
 	}
 
-	private int getNodeIndex(RDFNode node, List<RDFNode> index, Map<Integer, Integer> nodeID) {
+	private int getNodeIndex(Node node, List<Node> index, Map<Integer, Integer> nodeID) {
+		//maybe as tmpIndex directly
 		// int n = index.indexOf(node);
-		int hash = JenaNodeFormatter.format(node.asNode()).hashCode();
-		if(nodeID.containsKey(hash)){
-			return nodeID.get(hash);
+		int ret =  addObject(node, dict).intValue();
+		if(ret>index.size()){
+			index.add(node);
 		}
+		else{
+			System.out.print("");
+		}
+		return ret-1;
 
-		index.add(node);
-		nodeID.put(hash, index.size()-1);
-		return index.size()-1;
+		//nodeID.put(hash, index.size()-1);
+		//return index.size()-1;
 	}
 
+	private Long addObject(Node n, TempDictionary dict){
+		Long o1;
+		if(n.isLiteral()){
+			o1 = dict.insert(escape(NodeDictionary.nodeToStr(n)), TripleComponentRole.OBJECT);
+		}
+		else {
+			o1 = dict.insert(NodeDictionary.nodeToStr(n), TripleComponentRole.OBJECT);
+		}
+		if(o1==-1){
+			System.out.println();
+		}
+		return o1;
+	}
+	private String escape(String literal){
+
+		return literal.replace("\"", "\\\"").replace("_", "\\_").replace("-", "\\-").trim();
+	}
 
 }

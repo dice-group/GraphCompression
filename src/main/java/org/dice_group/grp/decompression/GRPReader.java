@@ -34,8 +34,8 @@ public class GRPReader {
 			throws NotSupportedException, IOException {
 
 		try (FileInputStream fos = new FileInputStream(input);
-				GzipCompressorInputStream gzip = new GzipCompressorInputStream(fos);
-				TarArchiveInputStream tais = new TarArchiveInputStream(gzip);) {
+				//GzipCompressorInputStream gzip = new GzipCompressorInputStream(fos);
+				TarArchiveInputStream tais = new TarArchiveInputStream(fos);) {
 			ArchiveEntry entry = tais.getNextEntry();
 
 			byte[] grammarArr = new byte[0];

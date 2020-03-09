@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -36,10 +37,10 @@ public class GRPWriter {
 	public static final String DICTIONARY_ENTRY_NAME = "dict";
 	public static final String GRAMMAR_ENTRY_NAME = "grammar";
 
-	public static void save(String output,Grammar grammar, DictionaryPrivate dictionaryPrivate, Boolean kd2Flag) throws  NotSupportedException, IOException {
+	public static void save(String output,Grammar grammar, DictionaryPrivate dictionaryPrivate, Boolean kd2Flag, Boolean threaded) throws NotSupportedException, IOException, ExecutionException, InterruptedException {
 		GrammarCompressor compressor;
 		if(kd2Flag){
-			compressor = new KD2TreeCompressor();
+			compressor = new KD2TreeCompressor(threaded);
 		}else {
 			compressor = new CRSCompressor();
 		}
@@ -51,8 +52,8 @@ public class GRPWriter {
 		
 		
 		try(FileOutputStream fos = new FileOutputStream(output);
-				GzipCompressorOutputStream gzip = new GzipCompressorOutputStream(fos);
-				TarArchiveOutputStream taos = new TarArchiveOutputStream(gzip);){
+				//GzipCompressorOutputStream gzip = new GzipCompressorOutputStream(fos);
+				TarArchiveOutputStream taos = new TarArchiveOutputStream(fos);){
 			TarArchiveEntry grammarEntry = new TarArchiveEntry(GRAMMAR_ENTRY_NAME);
 			long grammarSize=0;
 			long dictSize=0;

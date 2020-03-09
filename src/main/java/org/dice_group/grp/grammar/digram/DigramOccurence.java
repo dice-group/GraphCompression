@@ -60,15 +60,28 @@ public class DigramOccurence extends Digram {
 			} else {
 				if (external.contains(e1.getSubject())) {
 					if (external.contains(e1.getObject())) {
-						struct = 7;
+						if(e1.getObject().equals(e2.getObject())){
+							struct=36;
+						}else {
+							struct = 7;
+						}
 					} else if (external.contains(e2.getObject())) {
 						struct = 8;
 					} else {
-						struct = 9;
+						if(e1.getObject().equals(e2.getObject())){
+							struct = 34;
+						}else {
+							struct = 9;
+						}
 					}
 				} else {
 					if (external.contains(e1.getObject())) {
-						struct = external.contains(e2.getObject()) ? (byte) 10 : 11;
+						if(e1.getObject().equals(e2.getObject())){
+							struct= 35;
+						}
+						else {
+							struct = external.contains(e2.getObject()) ? (byte) 10 : 11;
+						}
 					} else {
 						struct = 12;
 					}

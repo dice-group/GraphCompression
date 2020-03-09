@@ -1,5 +1,6 @@
 package org.dice_group.grp.util;
 
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.tdb.index.Index;
 
@@ -7,7 +8,7 @@ public class IndexedRDFNode {
 
     private int lowerBound=0;
     private int upperBound=0;
-    private RDFNode node;
+    private Node node;
 
 
     private Integer hdtIndex;
@@ -18,7 +19,7 @@ public class IndexedRDFNode {
     public void setUpperBound(int upperBound){
         this.upperBound = upperBound;
     }
-    public void setRDFNode(RDFNode node){
+    public void setRDFNode(Node node){
         this.node=node;
     }
 
@@ -30,7 +31,7 @@ public class IndexedRDFNode {
         return this.upperBound;
     }
 
-    public RDFNode getRDFNode(){
+    public Node getRDFNode(){
         return node;
     }
 

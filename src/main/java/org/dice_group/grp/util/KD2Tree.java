@@ -27,7 +27,8 @@ public class KD2Tree {
        paths.add(path);
    }
 
-   public void merge(){
+
+    public void merge(){
        List<Byte[]> tree = new ArrayList<Byte[]>();
        List<Integer> order = new ArrayList<Integer>();
        List<Integer> nextOrder = new ArrayList<Integer>();
@@ -139,7 +140,7 @@ public class KD2Tree {
 
     //TODO check if it does what it should
     public List<List<Byte>> createPaths() {
-        List<TreeNode> leaves = new ArrayList<TreeNode>();
+        Set<TreeNode> leaves = new HashSet<TreeNode>();
         List<TreeNode> order = new ArrayList<TreeNode>();
         TreeNode root = new TreeNode();
         root.setValue(new Byte[]{tree.get(0),tree.get(1),tree.get(2), tree.get(3)});
@@ -185,6 +186,7 @@ public class KD2Tree {
         }
         return paths;
     }
+
 
     public byte[] serialize() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

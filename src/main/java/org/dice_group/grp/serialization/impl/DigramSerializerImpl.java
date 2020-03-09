@@ -76,8 +76,9 @@ public class DigramSerializerImpl implements DigramSerializer {
 		ret.putInt(e1);
 		ret.putInt(e2);
 		ret.put(flags);
-		for(byte b : internalsBytes)
+		for(byte b : internalsBytes) {
 			ret.put(b);
+		}
 		return ret.array();
 		
 	}

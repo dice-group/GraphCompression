@@ -32,6 +32,17 @@ public class TreeNode {
         this.children[i] = child;
     }
 
+    public TreeNode setChildIfAbsent(int i, TreeNode child){
+        if(this.children[i]==null) {
+            value[i]=1;
+            this.children[i] = child;
+        }else{
+            child=null;
+        }
+        return this.children[i];
+    }
+
+
     public TreeNode getChild(int i){
         return this.children[i];
     }

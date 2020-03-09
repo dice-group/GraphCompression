@@ -3,6 +3,7 @@ package org.dice_group.grp.grammar;
 import java.util.*;
 
 import grph.Grph;
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.dice_group.grp.grammar.digram.Digram;
@@ -18,13 +19,15 @@ public class Grammar {
 	private BoundedList props;
 	private Map<Integer, Digram> rules = new HashMap<Integer, Digram>();
 	private Map<Digram, List<DigramOccurence>> replaced = new HashMap<Digram, List<DigramOccurence>>();
-	private List<RDFNode> soIndex;
+	private List<Node> soIndex;
 
 
 	private List<Statement> stmts =new ArrayList<Statement>();
+	private int vSize=0;
 
 	public Grammar(Grph start) {
 		this.start = start;
+		vSize=start.getVertices().size();
 	}
 	
 	public void setStart(Grph start) {
@@ -79,11 +82,11 @@ public class Grammar {
 	}
 
 
-    public void setSOIndex(List<RDFNode> soIndex) {
+    public void setSOIndex(List<Node> soIndex) {
 		this.soIndex = soIndex;
     }
 
-	public List<RDFNode> getSOIndex() {
+	public List<Node> getSOIndex() {
 		return this.soIndex;
 	}
 
@@ -96,6 +99,9 @@ public class Grammar {
 	}
 
 
+    public int getVSize() {
+		return this.vSize;
+    }
 }
 
 

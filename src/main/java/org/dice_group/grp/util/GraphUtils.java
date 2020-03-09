@@ -8,6 +8,7 @@ import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.GraphUtil;
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -134,12 +135,51 @@ public class GraphUtils {
 	}
 
 
-	public static RDFNode parseHDTLiteral(Node l){
-		String literalStr = l.toString().replace("\\\"", "\"");
+	public static Node parseLiteral(String l){
+		String literalStr = l.replace("\\\"", "\"").replace("\\-", "-").replace("\\_", "_");
 		if(literalStr.startsWith("\"") && literalStr.endsWith("\"")){
 			literalStr = literalStr.substring(1, literalStr.length()-1);
 		}
-		if(literalStr.matches(".*@[a-zA-Z0-9]+]")){
+		if(literalStr.matches(".*@[a-zA-Z0-9\\s]+]")){
+			String val = literalStr.substring(0, literalStr.lastIndexOf("@"));
+			if(val.startsWith("\"") && val.endsWith("\"")){
+				val = val.substring(1, val.length()-1);
+			}
+			String lang = literalStr.substring(literalStr.indexOf("@")+1);
+			return NodeFactory.createLiteral(val, lang);
+		}
+		if(literalStr.matches(".*\\^\\^<.*>")){
+			String val = literalStr.substring(0,literalStr.lastIndexOf("^^"));
+			if(val.startsWith("\"") && val.endsWith("\"")){
+				val = val.substring(1, val.length()-1);
+			}
+			String uri = literalStr.substring(literalStr.lastIndexOf("^^")+3, literalStr.length()-1);
+			RDFDatatype dtype = TypeMapper.getInstance().getSafeTypeByName(uri);
+			return NodeFactory.createLiteral(val, dtype);
+
+		}
+
+
+		/*
+		Node literal = JenaNodeCreator.createLiteral(literalStr);
+		if(literal.getLiteralLanguage()!=null && !literal.getLiteralLanguage().isEmpty()){
+			return ResourceFactory.createLangLiteral(literal.getLiteralValue().toString(), literal.getLiteralLanguage());
+		}
+		else if(literal.getLiteralDatatype()!=null){
+
+			return ResourceFactory.createTypedLiteral(literal.getLiteralValue());
+		}
+
+		 */
+		return NodeFactory.createLiteral(literalStr);
+	}
+
+	public static RDFNode parseHDTLiteral(Node l){
+		String literalStr = l.toString().replace("\\\"", "\"").replace("\\-", "-").replace("\\_", "_");
+		if(literalStr.startsWith("\"") && literalStr.endsWith("\"")){
+			literalStr = literalStr.substring(1, literalStr.length()-1);
+		}
+		if(literalStr.matches(".*@[a-zA-Z0-9\\s]+]")){
 			String val = literalStr.substring(0, literalStr.lastIndexOf("@"));
 			if(val.startsWith("\"") && val.endsWith("\"")){
 				val = val.substring(1, val.length()-1);
@@ -200,14 +240,14 @@ public class GraphUtils {
 						nonTerminalEdges.add(stmt);
 				}
 				else {
-					Resource s = ResourceFactory.createResource(dict.getNode(rowPtr, TripleComponentRole.SUBJECT).getURI());
+					Resource s = ResourceFactory.createResource(dict.getNode(rowPtr, TripleComponentRole.OBJECT).getURI());
 					try {
-						Node n = dict.getNode(col[0], TripleComponentRole.SUBJECT);
+						Node n = getObject(col[0], dict);
 						RDFNode o;
 						if (n.getURI().startsWith("\\\"")) {
 							o = GraphUtils.parseHDTLiteral(n);
 						} else {
-							o = ResourceFactory.createResource(dict.getNode(col[0], TripleComponentRole.SUBJECT).getURI());
+							o = ResourceFactory.createResource(dict.getNode(col[0], TripleComponentRole.OBJECT).getURI());
 						}
 						m.add(s, p, o);
 					}catch(NullPointerException e){
@@ -220,6 +260,14 @@ public class GraphUtils {
 		}
 		System.out.println(props);
 		return m;
+	}
+
+	public static Node getObject(int o, NodeDictionary dict){
+		try {
+			return dict.getNode(o, TripleComponentRole.OBJECT);
+		}catch(Exception e){
+			return dict.getNode(o, TripleComponentRole.OBJECT);
+		}
 	}
 	
 	public static Integer getRDFIndex(RDFNode node) {

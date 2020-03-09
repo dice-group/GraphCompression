@@ -173,6 +173,15 @@ public class Digram {
 		if(structure==33) {
 			return createOccInternal(external, external.get(0), internals.get(0), internals.get(0), internals.get(0));
 		}
+		if(structure==34){
+			return createOccInternal(external, external.get(0), internals.get(0), external.get(0), internals.get(0));
+		}
+		if(structure==35){
+			return createOccInternal(external, internals.get(0), external.get(0), internals.get(0), external.get(0));
+		}
+		if(structure==36){
+			return createOccInternal(external, external.get(0), external.get(0), external.get(1), external.get(1));
+		}
 		
 		return null;
 	}

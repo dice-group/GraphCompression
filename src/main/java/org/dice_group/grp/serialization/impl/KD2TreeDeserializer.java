@@ -61,12 +61,12 @@ public class KD2TreeDeserializer {
             offset+=size+1;
 //            offset++;
             i+=size+1;
+            count++;
             if(count%10 ==0) {
                 System.out.println("Created "+count+" kd trees/matrices");
                 System.out.println("Matrices took avg "+avgM*1.0/count+"ms");
                 System.out.println("Trees took avg "+avgKd*1.0/count+"ms");
             }
-            count++;
         }
         System.out.println("Finished creating "+count+" kd trees/matrices");
         return matrices;

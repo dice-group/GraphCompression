@@ -45,7 +45,6 @@ public class KD2TreeDecompressor implements GrammarDecompressor {
     }
 
 
-
     public Model decompressStart(byte[] arr, NodeDictionary dict, List<Statement> nonTerminalEdges) throws NotSupportedException, IOException {
         Model m = ModelFactory.createDefaultModel();
         KD2TreeDeserializer deser = new KD2TreeDeserializer();
@@ -59,10 +58,10 @@ public class KD2TreeDecompressor implements GrammarDecompressor {
             }
 
             for(Point p : matrix.getPoints()){
-                Node subject = dict.getNode(p.getRow(), TripleComponentRole.SUBJECT);
-                Node object = dict.getNode(p.getCol(), TripleComponentRole.SUBJECT);
+                Node subject = dict.getNode(p.getRow(), TripleComponentRole.OBJECT);
+                Node object = GraphUtils.getObject(p.getCol(), dict);
                 RDFNode o;
-                if(object.getURI().startsWith("\\\"")) {
+                if(object.isLiteral() || object.toString().startsWith("\\\"")) {
                     o = GraphUtils.parseHDTLiteral(object);
                 }
                 else{

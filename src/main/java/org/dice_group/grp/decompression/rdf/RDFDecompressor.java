@@ -102,12 +102,12 @@ public class RDFDecompressor {
 
     private void addStatement(Statement edge, Model m, NodeDictionary dict){
         Node property = dict.getNode(edge.getPredicate(), TripleComponentRole.PREDICATE);
-        Node subject = dict.getNode(edge.getSubject(), TripleComponentRole.SUBJECT);
-        Node object = dict.getNode(edge.getObject(), TripleComponentRole.SUBJECT);
+        Node subject = dict.getNode(edge.getSubject(), TripleComponentRole.OBJECT);
+        Node object = GraphUtils.getObject(edge.getObject(), dict);
 
         RDFNode o;
-        if(object.getURI().startsWith("\\\"") || object.getURI().startsWith("\"")) {
-            //TODO parse Node, what literal it is !!!
+        if(object.isLiteral() || object.toString().startsWith("\\\"")){
+
             o = GraphUtils.parseHDTLiteral(object);
         }
         else{
@@ -117,5 +117,6 @@ public class RDFDecompressor {
                 ResourceFactory.createProperty(JenaNodeFormatter.format(property)),
                 o);
     }
+
 
 }

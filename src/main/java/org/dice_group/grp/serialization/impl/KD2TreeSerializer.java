@@ -1,5 +1,6 @@
 package org.dice_group.grp.serialization.impl;
 
+import com.github.andrewoma.dexx.collection.internal.redblack.Tree;
 import grph.Grph;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.tdb.index.Index;
@@ -8,6 +9,7 @@ import org.dice_group.grp.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.instrument.Instrumentation;
 import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
@@ -15,7 +17,7 @@ import static junit.framework.Assert.assertEquals;
 public class KD2TreeSerializer{
 
 
-    public byte[] serialize(List<Statement> stmts, Grph g, BoundedList propertyIndex) throws IOException {
+    public byte[] serialize(List<Statement> stmts, int vSize) throws IOException {
         Map<Integer, LabledMatrix> matrices = new HashMap<Integer, LabledMatrix>();
         //create matrices
 
@@ -29,26 +31,35 @@ public class KD2TreeSerializer{
 
         }
 
-
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int x=0;
-        Double h = Math.ceil(log(g.getVertices().size(), 2));
+        Double h = Math.ceil(log(vSize, 2));
         Double size = Math.pow(2, h);
         for(Integer key : matrices.keySet()){
             LabledMatrix matrix = matrices.get(key);
-            List<Integer[]> queue = new ArrayList<Integer[]>();
             KD2Tree tree = new KD2Tree(matrix.getLabelId());
-
+            TreeNode root = new TreeNode();
+            int c=0;
             for(Point p : matrix.getPoints()){
                 //get path
                 int c1=0 ;
                 int r1=0;
                 int c2=size.intValue();
                 int r2=size.intValue();
-                List<Byte> path = new ArrayList<Byte>();
+                TreeNode pnode = root;
+                c++;
+                if(c%1000000==0){
+                    System.out.print(c+"\t");
+                    Stats.printMemStats();
+                }
+
                 for(int i=0;i<h;i++){
                     Byte node = getNode(p, c1, r1, c2, r2);
-                    path.add(node);
+                    TreeNode cnode = new TreeNode();
+
+                    cnode = pnode.setChildIfAbsent(node, cnode);
+                    pnode = cnode;
+                    //path.add(node);
                     if(node==0){
                         r2 = (r2 - r1) / 2 + r1;
                         c2 = (c2 - c1) / 2 + c1;
@@ -66,19 +77,46 @@ public class KD2TreeSerializer{
                         r1 = (r2 - r1) / 2 + r1;
                         c1 = (c2 - c1) / 2 + c1;
                     }
-                }
 
-                tree.addPath(path);
+                }
+                //tree.addPath(path);
             }
-            tree.merge();
+
+            Map<Integer, List<Byte>> hMap = new HashMap<Integer, List<Byte>>();
+            merge(root, hMap, 0, h);
+            for(int i=0; i<hMap.size();i++){
+                for(Byte b : hMap.get(i)) {
+                    tree.addNodeNeighbor(b);
+                }
+            }
             baos.write(tree.serialize());
             x++;
             if(x%10 ==0)
                 System.out.println("Created "+x+" kd2 trees of "+matrices.size());
         }
 
-
         return baos.toByteArray();
+    }
+
+    private void merge(TreeNode root, Map<Integer, List<Byte>> hMap, int h, double max) {
+        if(root==null || h>=max){
+            return;
+        }
+        hMap.putIfAbsent(h, new ArrayList<Byte>());
+        hMap.get(h).add(root.getValue()[0]);
+        hMap.get(h).add(root.getValue()[1]);
+        hMap.get(h).add(root.getValue()[2]);
+        hMap.get(h).add(root.getValue()[3]);
+        TreeNode c0 = root.getChild(0);
+        TreeNode c1 = root.getChild(1);
+        TreeNode c2 = root.getChild(2);
+        TreeNode c3 = root.getChild(3);
+        root =null;
+        merge(c0, hMap, h+1, max);
+        merge(c1, hMap, h+1, max);
+        merge(c2, hMap, h+1, max);
+        merge(c3, hMap, h+1, max);
+
     }
 
     public Byte getNode(Point p, int c1, int r1, int c2, int r2){
