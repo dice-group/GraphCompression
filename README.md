@@ -52,3 +52,12 @@ rdfrepair -d -out TURTLE -tkd2 IN_FILE.grp OUT_FILE.ttl
 You can reach the read-only service at http://localhost:3030/kd2/sparql 
 
 Depending on the size it may take a bit to load. 
+
+
+# Download precompressed files
+Name | Size | Triples | Link
+------------ | ------------- | -------------  | -------------
+ArchivesHub | | 1361815 | 
+Jamendo | | 1047950 | 
+ScholaryData (rich) | | 859840 |
+DBLP 2017 | | 88150324 | 
