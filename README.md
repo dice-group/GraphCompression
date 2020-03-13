@@ -47,6 +47,12 @@ Decompression (both KD2 as well as gRePair algorithm) using TURTLE format (N-TRI
 rdfrepair -d -out TURTLE -tkd2 IN_FILE.grp OUT_FILE.ttl
 ```
 
+To adjust the RAM usage to 4GB use the following:
+
+```
+export RDF_RE_PAIR_XMX=4g
+```
+
 # Querying KD2 with Fuseki
 
 ### Prepacked 
@@ -55,7 +61,7 @@ Download fuseki-kd2.tar.gz from the latest release
 
 ```bash
 wget http://.../fuseki-kd2.tar.gz
-tar -xzvf fuseki-kd2
+tar -xzvf fuseki-kd2.tar.gz
 cd apache-jena-fuseki-3.13.1/
 cp YOUR_KD2_COMPRESSED_FILE file.grp
 ./fuseki-server --config=kd2_example.ttl
