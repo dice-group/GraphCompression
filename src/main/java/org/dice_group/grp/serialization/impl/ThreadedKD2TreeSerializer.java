@@ -56,9 +56,9 @@ public class ThreadedKD2TreeSerializer {
             futures.add(fut);
         }
         service.shutdown();
-        for(Future fut : futures) {
-            Object o =fut.get();
-            for (KD2Tree tree : (List<KD2Tree>)o) {
+        for(Future<List<KD2Tree>> fut : futures) {
+            List<KD2Tree> o =fut.get();
+            for (KD2Tree tree : o) {
                 baos.write(tree.serialize());
             }
         }

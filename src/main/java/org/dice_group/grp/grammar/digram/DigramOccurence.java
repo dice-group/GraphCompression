@@ -14,7 +14,7 @@ public class DigramOccurence extends Digram {
 	private Statement e1;
 	private Statement e2;
 	private int origE1;
-
+	private boolean switchStmts;
 
 	private int origE2;
 	private List<Integer> external;
@@ -37,14 +37,25 @@ public class DigramOccurence extends Digram {
 			if (e1.getSubject().equals(e2.getSubject())) {
 				// n-n --> o
 				if (external.contains(e1.getSubject())) {
-					struct = external.contains(e2.getObject()) ? (byte) 1 : 2;
+					if(external.contains(e2.getObject())){
+						struct = 1;
+					}
+					else {
+						struct = 2;
+					}
+					//struct = external.contains(e2.getObject()) ? (byte) 1 : 2;
 				} else {
 					struct = 3;
 				}
 			} else {
 				// n-n <-- o
 				if (external.contains(e1.getSubject())) {
-					struct = external.contains(e2.getObject()) ? (byte) 4 : 5;
+					if(external.contains(e2.getSubject())){
+						struct = 4;
+					}
+					else {
+						struct = 5;
+					}
 				} else {
 					struct = 6;
 				}
@@ -53,7 +64,24 @@ public class DigramOccurence extends Digram {
 			if (e2.getSubject().equals(e2.getObject())) {
 				// n --> o --> n-n
 				if (external.contains(e1.getSubject())) {
-					struct = external.contains(e1.getObject()) ? (byte) 1 : 2;
+					if(external.contains(e1.getObject()) ){
+						//switch statements
+						switchStmts = true;
+						Statement s1 =this.getEdge1();
+						this.setEdge1(this.getEdge2());
+						this.setEdge2(s1);
+						this.setEdgeLabel1(this.getEdge1().getPredicate());
+						this.setEdgeLabel2(this.getEdge2().getPredicate());
+						int o1 = this.origE1;
+						this.origE1=origE2;
+						this.origE2=o1;
+ 						origE1=origE2;
+
+						struct=1;
+					}
+					else {
+						struct = 2;
+					}
 				} else {
 					struct = 6;
 				}
@@ -236,7 +264,12 @@ public class DigramOccurence extends Digram {
 	}
 
 	public void setOrigE1(int origE1) {
-		this.origE1 = origE1;
+		if(switchStmts){
+			this.origE2=origE1;
+		}
+		else {
+			this.origE1 = origE1;
+		}
 	}
 
 	public int getOrigE2() {
@@ -244,7 +277,12 @@ public class DigramOccurence extends Digram {
 	}
 
 	public void setOrigE2(int origE2) {
-		this.origE2 = origE2;
+		if(switchStmts){
+			this.origE1=origE2;
+		}
+		else {
+			this.origE2 = origE2;
+		}
 	}
 
 

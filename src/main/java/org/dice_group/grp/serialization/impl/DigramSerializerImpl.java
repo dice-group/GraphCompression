@@ -36,6 +36,9 @@ public class DigramSerializerImpl implements DigramSerializer {
 		
 		// save struct byte 
 		byte struct = m.getStructure();
+		if(struct==4){
+			System.out.println();
+		}
 		// getInternals
 		// TODO for some reaseon getReplaced wont work here 
 		List<Long[]> internals = getInternalIndexes(grammar.getReplaced().get(m));
@@ -116,9 +119,13 @@ public class DigramSerializerImpl implements DigramSerializer {
 			}
 			
 		});
+		int x=0;
 		for(DigramOccurence occ : list) {
 			List<Integer> internals = occ.getInternals();
-			
+			if(internals.size()==1 && internals.get(0)==15364){
+				System.out.println(x);
+			}
+			x++;
 			Long[] indexInternals = new Long[internals.size()];
 			for(int i=0;i<internals.size();i++) {
 				Integer n = internals.get(i);

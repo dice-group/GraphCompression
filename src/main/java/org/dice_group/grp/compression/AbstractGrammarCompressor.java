@@ -67,8 +67,8 @@ public abstract  class AbstractGrammarCompressor implements GrammarCompressor {
         //TODO
         for(Integer i : rules.keySet()) {
             IndexedRDFNode iNode = grammar.getProps().getBounded(i);
-            Node node = grammar.getProps().getBounded(i).getRDFNode();
-            String uri =node.getURI();
+            String uri = grammar.getProps().getBounded(i).getRDFNode();
+           // String uri =node.getURI();
             String intStr =  uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, "");
             try {
 

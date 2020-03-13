@@ -1,6 +1,8 @@
 package org.dice_group.grp.decompression.rdf;
 
+import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.dice_group.grp.decompression.GRPReader;
 import org.dice_group.grp.decompression.GrammarDecompressor;
@@ -26,13 +28,20 @@ import javax.swing.plaf.nimbus.State;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class RDFDecompressor {
 
-    public Model decompress(String file, boolean kd2Decompressor) throws IOException, NotSupportedException {
+    private boolean threaded=false;
+
+    public RDFDecompressor(boolean threaded){
+        this.threaded = threaded;
+    }
+
+    public Model decompress(String file, boolean kd2Decompressor) throws IOException, NotSupportedException, ExecutionException, InterruptedException {
         GrammarDecompressor dcmpr;
         if(kd2Decompressor){
-             dcmpr = new KD2TreeDecompressor();
+             dcmpr = new KD2TreeDecompressor(threaded);
         }
         else{
             dcmpr = new CRSDecompressor();
@@ -46,7 +55,7 @@ public class RDFDecompressor {
         return decompressFull(grammar, new NodeDictionary(dict), dcmpr);
     }
 
-    public Model decompressFull(byte[] arr, NodeDictionary dict, GrammarDecompressor dcmpr) throws IOException, NotSupportedException {
+    public Model decompressFull(byte[] arr, NodeDictionary dict, GrammarDecompressor dcmpr) throws IOException, NotSupportedException, ExecutionException, InterruptedException {
         //startSize, start, rules
         //1. 4 bytes = length of start := X
         ByteBuffer bb = ByteBuffer.wrap(arr);
@@ -59,7 +68,7 @@ public class RDFDecompressor {
         bb.get(start);
         //rather a mapping Map<Integer, List<Statement>>
         List<org.dice_group.grp.grammar.Statement> nonTerminalEdges = new ArrayList<org.dice_group.grp.grammar.Statement>();
-        Model startGraph = dcmpr.decompressStart(start, dict, nonTerminalEdges);
+        Graph startGraph = dcmpr.decompressStart(start, dict, nonTerminalEdges);
 
 
         Collections.sort(nonTerminalEdges, new Comparator<org.dice_group.grp.grammar.Statement>() {
@@ -85,11 +94,11 @@ public class RDFDecompressor {
         bb.get(rules);
         decompressRules(startGraph, rules, dict, nonTerminalEdges, dcmpr.getStartID());
 
-        return startGraph;
+        return ModelFactory.createModelForGraph(startGraph);
     }
 
 
-    public void decompressRules(Model m, byte[] arr, NodeDictionary dict, List<org.dice_group.grp.grammar.Statement> nonTerminalEdges, int startID) throws IOException {
+    public void decompressRules(Graph m, byte[] arr, NodeDictionary dict, List<org.dice_group.grp.grammar.Statement> nonTerminalEdges, int startID) throws IOException {
         DigramDeserializer dSer = new DigramDeserializer();
 
         List<Statement> mapping = dSer.decompressRules(arr, dict, startID, nonTerminalEdges);
@@ -100,11 +109,12 @@ public class RDFDecompressor {
 
     }
 
-    private void addStatement(Statement edge, Model m, NodeDictionary dict){
+    private void addStatement(Statement edge, Graph m, NodeDictionary dict){
         Node property = dict.getNode(edge.getPredicate(), TripleComponentRole.PREDICATE);
         Node subject = dict.getNode(edge.getSubject(), TripleComponentRole.OBJECT);
         Node object = GraphUtils.getObject(edge.getObject(), dict);
 
+        /*
         RDFNode o;
         if(object.isLiteral() || object.toString().startsWith("\\\"")){
 
@@ -116,6 +126,9 @@ public class RDFDecompressor {
         m.add(ResourceFactory.createResource(JenaNodeFormatter.format(subject)),
                 ResourceFactory.createProperty(JenaNodeFormatter.format(property)),
                 o);
+
+         */
+        m.add(new Triple(subject, property, object));
     }
 
 

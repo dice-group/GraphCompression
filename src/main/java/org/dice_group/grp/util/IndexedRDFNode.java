@@ -8,7 +8,7 @@ public class IndexedRDFNode {
 
     private int lowerBound=0;
     private int upperBound=0;
-    private Node node;
+    private String node;
 
 
     private Integer hdtIndex;
@@ -19,7 +19,7 @@ public class IndexedRDFNode {
     public void setUpperBound(int upperBound){
         this.upperBound = upperBound;
     }
-    public void setRDFNode(Node node){
+    public void setRDFNode(String node){
         this.node=node;
     }
 
@@ -31,7 +31,7 @@ public class IndexedRDFNode {
         return this.upperBound;
     }
 
-    public Node getRDFNode(){
+    public String getRDFNode(){
         return node;
     }
 

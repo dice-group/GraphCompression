@@ -3,7 +3,9 @@ package org.dice_group.grp.main;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.jena.rdf.model.Model;
@@ -69,11 +71,22 @@ public class Main {
 			}
 		}
 		else if(args[0].equals("-d")) {
-			if(args[1].toLowerCase().equals("-crs")){
-				decompress(args[2], args[3], false);
+			List<String> cliargs = new ArrayList<String>();
+			String outFormat="N-TRIPLE";
+			if(cliargs.contains("-out")){
+				outFormat = cliargs.get(cliargs.indexOf("-out")+1).toUpperCase();
 			}
-			else if(args[1].toLowerCase().equals("-kd2")){
-				decompress(args[2], args[3], true);
+			for(int i=1;i<args.length;i++){
+				cliargs.add(args[i].toLowerCase());
+			}
+			if(cliargs.contains("-crs")){
+				decompress(args[2], args[3], false, outFormat);
+			}
+			else if(cliargs.contains("-kd2")){
+				decompress(args[2], args[3], true, outFormat);
+			}
+			else if(cliargs.contains("-tkd2")){
+				decompress(args[2], args[3], true, true, outFormat);
 			}
 			else{
 				printHelp();
@@ -87,13 +100,18 @@ public class Main {
 	}
 
 	public static void printHelp(){
-		System.out.println("grp [-c|-d] [-crs|-kd2|-tkd2] in out");
+		System.out.println("grp [-c|-d] options [-crs|-kd2|-tkd2] in out");
 		System.out.println("\t-c\tcompress RDF File");
 		System.out.println("\t-d\tdecompress GRP File");
 		System.out.println();
-		System.out.println("\t-crs\tserialize using CRS");
-		System.out.println("\t-kd2\tserialize using KD2 TREE");
-		System.out.println("\t-tkd2\tserialize using Threaded KD2 TREE (only with -c)");
+		System.out.println("\t-crs\t(de)serialize using CRS (deprecated)");
+		System.out.println("\t-kd2\t(de)serialize using KD2 TREE");
+		System.out.println("\t-tkd2\t(de)serialize using Threaded KD2 Tree");
+		System.out.println();
+		System.out.println("\tDecompress Options");
+		System.out.println("\t-out: N-TRIPLE, TURTLE, RDF/XML - will save output in the format specified");
+
+
 		return;
 	}
 
@@ -105,7 +123,6 @@ public class Main {
 		RDFCompressor c = new RDFCompressor(threaded);
 		File grpFile = c.compressRDF(new File(fileName), output, kd2Serializer, kdFlag);
 		LOGGER.info("Compressed file {} succesfully to {}", fileName, grpFile.getName());
-		//TODO add more output of stats (File Size etc)
 		long end = Calendar.getInstance().getTimeInMillis();
 		LOGGER.info("Start time {}", Calendar.getInstance().getTime());
 		LOGGER.info("Compression of {} with size {} bytes to {} with size {} bytes took {} ms",fileName, new File(fileName).length() , grpFile.getName(), grpFile.length() ,end-start);
@@ -113,22 +130,24 @@ public class Main {
 		System.out.println("Ratio is "+(1.0*grpFile.length()/new File(fileName).length()));
 
 	}
-	
-	public static void decompress(String input, String output, boolean kd2decompressor) throws IOException, NotSupportedException {
-		RDFDecompressor c = new RDFDecompressor();
+
+	public static void decompress(String input, String output, boolean kd2decompressor, String outFormat) throws IOException, NotSupportedException, ExecutionException, InterruptedException {
+		decompress(input, output, kd2decompressor, false, outFormat);
+	}
+
+
+	public static void decompress(String input, String output, boolean kd2decompressor, boolean threaded, String outFormat) throws IOException, NotSupportedException, ExecutionException, InterruptedException {
+		RDFDecompressor c = new RDFDecompressor(threaded);
 		System.out.println("start decompression of "+input+" with size "+new File(input).length()+" bytes");
 		long start = Calendar.getInstance().getTimeInMillis();
 		Model m = c.decompress(input, kd2decompressor);
 		System.out.println("Decompression done, will save dataset to file now.");
 		FileWriter f = new FileWriter(output);
-		m.write(f, "TURTLE");
+		m.write(f, outFormat);
 		long end = Calendar.getInstance().getTimeInMillis();
 		System.out.println("Decompression of "+input+" with size "+new File(input).length()+" bytes to "+output+" with size "+new File(output).length()+" bytes took "+(end-start)+" ms");
 
 	}
-	
-	public void query() {
-		
-	}
+
 	
 }

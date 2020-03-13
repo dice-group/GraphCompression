@@ -29,4 +29,9 @@ public class GrammarHelper {
 	public static void setStartIndexForNT(int ntStart){
 		nonTi=ntStart;
 	}
+
+	public static void reset(){
+		nonT=0;
+		nonTi=0;
+	}
 }

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.dice_group.grp.decompression.GrammarDecompressor;
@@ -40,7 +41,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 
 
 	@Override
-	public Model decompressStart(byte[] arr, NodeDictionary dict, List<Statement> nonTerminalEdges) throws NotSupportedException, IOException {
+	public Graph decompressStart(byte[] arr, NodeDictionary dict, List<Statement> nonTerminalEdges) throws NotSupportedException, IOException {
 		List<Integer>[] deserCRS =  deserializer.deserialize(arr);
 		
 		// reverse CRS
@@ -64,7 +65,7 @@ public class CRSDecompressor implements GrammarDecompressor {
 		
 		// reverse Matrice
 		Model indexedGraph = GraphUtils.createModelFromRCMatrice(rcMatrix, dict, nonTerminalEdges);
-		return indexedGraph;
+		return indexedGraph.getGraph();
 	}
 
 }

@@ -1,0 +1,6 @@
+<http://example.com/a> <http://example.com/b> <http://example.com/c> .
+<http://example.com/a> <http://example.com/d> _:abc .
+_:abc <http://example.com/q> "abd" .
+_:abc <http://example.com/d> <http://example.com/a> .
+_:abc <http://example.com/b> _:abd .
+_:abd <http://example.com/u> <http://example.com/o> .

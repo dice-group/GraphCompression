@@ -1,12 +1,12 @@
 package org.dice_group.grp.decompression.impl;
 
 import grph.Grph;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.out.NodeFormatter;
+import org.apache.jena.sparql.graph.GraphFactory;
 import org.apache.jena.sparql.graph.NodeTransform;
 import org.dice_group.grp.decompression.GrammarDecompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
@@ -19,6 +19,7 @@ import org.dice_group.grp.serialization.DigramSerializer;
 import org.dice_group.grp.serialization.impl.DigramDeserializer;
 import org.dice_group.grp.serialization.impl.DigramSerializerImpl;
 import org.dice_group.grp.serialization.impl.KD2TreeDeserializer;
+import org.dice_group.grp.serialization.impl.ThreadedKD2TreeDeserializer;
 import org.dice_group.grp.util.GraphUtils;
 import org.dice_group.grp.util.LabledMatrix;
 import org.dice_group.grp.util.Point;
@@ -30,10 +31,20 @@ import org.rdfhdt.hdtjena.NodeDictionary;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class KD2TreeDecompressor implements GrammarDecompressor {
 
 
+    private final Boolean threaded;
+
+    public KD2TreeDecompressor(){
+        this(false);
+    }
+    
+    public KD2TreeDecompressor(Boolean threaded){
+        this.threaded = threaded;
+    }
 
     private int startID =-1;
     public int getStartID() {
@@ -45,10 +56,17 @@ public class KD2TreeDecompressor implements GrammarDecompressor {
     }
 
 
-    public Model decompressStart(byte[] arr, NodeDictionary dict, List<Statement> nonTerminalEdges) throws NotSupportedException, IOException {
-        Model m = ModelFactory.createDefaultModel();
-        KD2TreeDeserializer deser = new KD2TreeDeserializer();
-        List<LabledMatrix> matrices = deser.deserialize(arr);
+    public Graph decompressStart(byte[] arr, NodeDictionary dict, List<Statement> nonTerminalEdges) throws NotSupportedException, IOException, ExecutionException, InterruptedException {
+        Graph g = GraphFactory.createDefaultGraph();
+        List<LabledMatrix> matrices;
+        if(threaded){
+            int cores = Runtime.getRuntime().availableProcessors();
+            ThreadedKD2TreeDeserializer deser = new ThreadedKD2TreeDeserializer();
+            matrices = deser.deserialize(arr, cores);
+        }else {
+            KD2TreeDeserializer deser = new KD2TreeDeserializer();
+            matrices = deser.deserialize(arr);
+        }
         for(LabledMatrix matrix : matrices){
             boolean isNT = false;
             Node property = dict.getNode(matrix.getLabelId(), TripleComponentRole.PREDICATE);
@@ -59,24 +77,17 @@ public class KD2TreeDecompressor implements GrammarDecompressor {
 
             for(Point p : matrix.getPoints()){
                 Node subject = dict.getNode(p.getRow(), TripleComponentRole.OBJECT);
-                Node object = GraphUtils.getObject(p.getCol(), dict);
-                RDFNode o;
-                if(object.isLiteral() || object.toString().startsWith("\\\"")) {
-                    o = GraphUtils.parseHDTLiteral(object);
-                }
-                else{
-                    o = ResourceFactory.createResource(object.getURI());
-                }
+                Node object = dict.getNode(p.getRow(), TripleComponentRole.OBJECT);
+
                 if(ntID !=null){
                     nonTerminalEdges.add(new Statement(p.getRow(),ntID, p.getCol()));
                 }
                 else {
-                    m.add(ResourceFactory.createResource(subject.getURI()),
-                            ResourceFactory.createProperty(property.getURI()),
-                            o);
+                    g.add(new Triple(subject, property, object));
+                    //m.add(s,ResourceFactory.createProperty(property.getURI()),o);
                 }
             }
         }
-        return m;
+        return g;
     }
 }

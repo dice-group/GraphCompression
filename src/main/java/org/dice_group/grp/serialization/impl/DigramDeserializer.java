@@ -35,9 +35,11 @@ public class DigramDeserializer {
         Map<Integer, List<Statement>> ntMap = new HashMap<Integer, List<Statement>>();
         List<Integer> queue;
         for(Statement s : nonTerminalEdges){
-            Integer e = Integer.valueOf(dict.getNode(s.getPredicate(), TripleComponentRole.PREDICATE).getURI().replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
+            String uri = dict.getNode(s.getPredicate(), TripleComponentRole.PREDICATE).getURI();
+            Integer e = Integer.valueOf(uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
             ntMap.putIfAbsent(e, new ArrayList<Statement>());
             ntMap.get(e).add(s);
+
         }
         queue = new ArrayList(ntMap.keySet());
         List<Statement> stmts = new ArrayList<Statement>();
@@ -100,14 +102,10 @@ public class DigramDeserializer {
 
 
         }while(bbuffer.hasRemaining());
-        //TODO for each encountance add to ntMap and queue
         Collections.sort(queue, Collections.reverseOrder());
         for(int y=0; y<queue.size();y++) {
 
             Integer key = queue.get(y);
-            if(key==28){
-                System.out.println();
-            }
 
             Digram d = keys.get(key);
             String ntIndex1 = dict.getNode(d.getEdgeLabel1(), TripleComponentRole.PREDICATE).getURI();
@@ -182,13 +180,12 @@ public class DigramDeserializer {
                     }
                 }
                 try {
-
                     occ = d.createOccurence(ext, ints);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
-
+                //TODO addition is to the wrong digram
                 //if edge is nt edge. add statement to edge, otherwise add to edges we can add
                 if (index1 !=null) {
                     Statement st = new Statement(occ.getEdge1().getSubject(), d.getEdgeLabel1(), occ.getEdge1().getObject());

@@ -7,6 +7,7 @@ import org.apache.jena.base.Sys;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
 import org.dice_group.grp.grammar.Grammar;
+import org.dice_group.grp.grammar.GrammarHelper;
 import org.dice_group.grp.grammar.Statement;
 import org.dice_group.grp.grammar.digram.Digram;
 import org.dice_group.grp.grammar.digram.DigramOccurence;
@@ -47,78 +48,58 @@ public class IntBasedIndexer {
     }
 
 
-    private Long addObject(Node n, Dictionary dict){
+    private Long addObject(String n, Dictionary dict){
         Long o1;
-        if(n.isLiteral()){
-            o1 = dict.stringToId(escape(NodeDictionary.nodeToStr(n)), TripleComponentRole.OBJECT);
-        }
-        else {
-            o1 = dict.stringToId(NodeDictionary.nodeToStr(n), TripleComponentRole.OBJECT);
-        }
+        o1 = dict.stringToId(n, TripleComponentRole.OBJECT);
+
         if(o1==-1){
             System.out.println();
         }
         return o1;
     }
 
-    private Long addObject(Node n, TempDictionary dict){
+    private Long addObject(String n, TempDictionary dict){
         Long o1;
-        if(n.isLiteral()){
-            o1 = dict.insert(escape(NodeDictionary.nodeToStr(n)), TripleComponentRole.OBJECT);
-        }
-        else {
-            o1 = dict.insert(NodeDictionary.nodeToStr(n), TripleComponentRole.OBJECT);
-        }
+        o1 = dict.insert(n, TripleComponentRole.OBJECT);
+
         if(o1==-1){
             System.out.println();
         }
         return o1;
     }
 
-    private String escape(String literal){
-        /*Matcher m = Pattern.compile("([^0-9a-zA-Z\\s+])").matcher(literal);
-        String output=literal;
-        while(m.find()){
-            output = m.replaceAll("\\\\$1");
-            literal = m.replaceAll("");  // number 46
-
-        }
-
-         */
-        return literal.replace("\"", "\\\"").replace("_", "\\_").replace("-", "\\-").trim();
-    }
 
 
 
     /*
      *
      */
-    public List<Statement> indexGraph(Grph graph,BoundedList pIndex, List<Node> soIndex) {
+    public List<Statement> indexGraph(Grph graph,BoundedList pIndex, List<String> soIndex) {
         List<Statement> stmts = new ArrayList<Statement>();
         List<String> nts  = new ArrayList<String>();
         for(IndexedRDFNode node : pIndex){
-            node.setHdtIndex(Long.valueOf(dict.stringToId(NodeDictionary.nodeToStr(node.getRDFNode()).replace("\"", "\\\"").trim(), TripleComponentRole.PREDICATE)).intValue());
+            node.setHdtIndex(Long.valueOf(dict.stringToId(node.getRDFNode().replace("\"", "\\\"").trim(), TripleComponentRole.PREDICATE)).intValue());
         }
         //Grph graphC = new InMemoryGrph();
         for (int edge : graph.getEdges()) {
             int s = graph.getDirectedSimpleEdgeTail(edge);
             int o = graph.getDirectedSimpleEdgeHead(edge);
 
-            Long s1 = dict.stringToId(NodeDictionary.nodeToStr(soIndex.get(s)), TripleComponentRole.OBJECT);
+            Long s1 = dict.stringToId(soIndex.get(s), TripleComponentRole.OBJECT);
             Long o1 = addObject(soIndex.get(o), dict);
             if(s1 == -1 || o1 == -1){
-                System.out.print(NodeDictionary.nodeToStr(soIndex.get(s))+"\t");
-                System.out.println(NodeDictionary.nodeToStr(soIndex.get(o)));
+                System.out.print(soIndex.get(s)+"\t");
+                System.out.println(soIndex.get(o));
             }
             //Long o1 = dict.stringToId(JenaNodeFormatter.format(soIndex.get(o)), TripleComponentRole.SUBJECT);
-            String pr = NodeDictionary.nodeToStr((pIndex.getBounded(edge).getRDFNode())).replace("\"", "\\\"").trim();
+            String pr = (pIndex.getBounded(edge).getRDFNode());
             if(pr.startsWith("http://n.")){
                 nts.add(pr);
             }
-            Long p = dict.stringToId(NodeDictionary.nodeToStr((pIndex.getBounded(edge).getRDFNode())), TripleComponentRole.PREDICATE);
+
+            Long p = dict.stringToId((pIndex.getBounded(edge).getRDFNode()), TripleComponentRole.PREDICATE);
             pIndex.getBounded(edge).setHdtIndex(p.intValue());
             graph.removeEdge(edge);
-
             stmts.add(new Statement(s1.intValue(), p.intValue(), o1.intValue()));
         }
         graph.clear();
@@ -127,27 +108,11 @@ public class IntBasedIndexer {
         return stmts;
     }
 
-    private void tmpIndexGraph(Grph graph, BoundedList pIndex, List<Node> soIndex) {
+    private void tmpIndexGraph(Grph graph, BoundedList pIndex, List<String> soIndex) {
         for(IndexedRDFNode node : pIndex){
 
-            tmpDict.insert(NodeDictionary.nodeToStr(node.getRDFNode()), TripleComponentRole.PREDICATE);
+            tmpDict.insert(node.getRDFNode(), TripleComponentRole.PREDICATE);
         }
-        /*
-        for (int edge : graph.getEdges()) {
-
-            int s = graph.getDirectedSimpleEdgeTail(edge);
-            int o = graph.getDirectedSimpleEdgeHead(edge);
-
-            if(soIndex.get(s).asNode().isLiteral()){
-                System.out.println(soIndex.get(s).asNode());
-            }
-            tmpDict.insert(NodeDictionary.nodeToStr(soIndex.get(s).asNode()), TripleComponentRole.OBJECT);
-            addObject(soIndex.get(o), tmpDict);
-            tmpDict.insert(NodeDictionary.nodeToStr(pIndex.getBounded(edge).getRDFNode().asNode()), TripleComponentRole.PREDICATE);
-
-        }
-
-         */
     }
 
 
@@ -160,6 +125,7 @@ public class IntBasedIndexer {
         // 1. tmpIndex everything
 
         tmpIndexGraph(grammar.getStart(), grammar.getProps(), grammar.getSOIndex());
+        ;
         List<Integer> keys = new ArrayList<Integer>();
         for (Integer key : grammar.getRules().keySet()) {
             keys.add(key);
@@ -187,7 +153,6 @@ public class IntBasedIndexer {
         Map<Digram, List<DigramOccurence>> realMap = new HashMap<Digram, List<DigramOccurence>>();
         for (Integer key : grammar.getRules().keySet()) {
             Digram digram = grammar.getRules().get(key);
-
             List<DigramOccurence> tmp = grammar.getReplaced().get(digram);
             digram = this.indexDigram(digram, grammar.getProps());
             tmp = indexDigramOcc(digram, tmp, grammar.getSOIndex());
@@ -208,8 +173,9 @@ public class IntBasedIndexer {
         return grammar;
     }
 
-    private List<DigramOccurence> indexDigramOcc(Digram digram, List<DigramOccurence> tmp, List<Node> soIndex) {
+    private List<DigramOccurence> indexDigramOcc(Digram digram, List<DigramOccurence> tmp, List<String> soIndex) {
         List<DigramOccurence> ret = new ArrayList<DigramOccurence>();
+        int c=0;
         for (DigramOccurence occ : tmp) {
 
             List<Integer> ext = new ArrayList<Integer>();
@@ -218,7 +184,7 @@ public class IntBasedIndexer {
                 //Long s = dict.stringToId(JenaNodeFormatter.format(soIndex.get(extNode)), TripleComponentRole.SUBJECT);
                 //ext.add(s.intValue());
                 Long o1;
-                Node index = soIndex.get(extNode);
+                String index = soIndex.get(extNode);
                 o1 = addObject(index, dict);
                 ext.add(o1.intValue());
             }
@@ -227,32 +193,42 @@ public class IntBasedIndexer {
                 //internals.add(s.intValue());
 
                 Long o1;
-                Node index = soIndex.get(intNode);
+                String index = soIndex.get(intNode);
                 o1 = addObject(index, dict);
                 internals.add(o1.intValue());
             }
-            ret.add(digram.createOccurence(ext, internals));
+
+            DigramOccurence occIndexed = digram.createOccurence(ext, internals);
+            ret.add(occIndexed);
         }
+        Collections.sort(ret, new Comparator<DigramOccurence>() {
+
+            @Override
+            public int compare(DigramOccurence digramOccurence, DigramOccurence t1) {
+                return 0;
+            }
+        });
         return ret;
     }
 
-    private void tmpIndexDigrams(Digram digram, List<DigramOccurence> occs, BoundedList pIndex, List<Node> soIndex) {
-        tmpDict.insert(NodeDictionary.nodeToStr(pIndex.getBounded(digram.getEdgeLabel1()).getRDFNode()), TripleComponentRole.PREDICATE);
-        tmpDict.insert(NodeDictionary.nodeToStr(pIndex.getBounded(digram.getEdgeLabel2()).getRDFNode()), TripleComponentRole.PREDICATE);
+    private void tmpIndexDigrams(Digram digram, List<DigramOccurence> occs, BoundedList pIndex, List<String> soIndex) {
+        tmpDict.insert(pIndex.getBounded(digram.getEdgeLabel1()).getRDFNode(), TripleComponentRole.PREDICATE);
+        tmpDict.insert(pIndex.getBounded(digram.getEdgeLabel2()).getRDFNode(), TripleComponentRole.PREDICATE);
 
         // internals (use OBJECT)
         for (DigramOccurence occ : occs) {
             for (Integer n : occ.getInternals()) {
-                Node index = soIndex.get(n);
+                String index = soIndex.get(n);
                 addObject(index, tmpDict);
                 //tmpDict.insert(JenaNodeFormatter.format(soIndex.get(n)), TripleComponentRole.SUBJECT);
             }
+
         }
     }
 
     private Digram indexDigram(Digram digram, BoundedList pIndex) {
-        Long el1 = dict.stringToId(NodeDictionary.nodeToStr(pIndex.getBounded(digram.getEdgeLabel1()).getRDFNode()), TripleComponentRole.PREDICATE);
-        Long el2 = dict.stringToId(NodeDictionary.nodeToStr(pIndex.getBounded(digram.getEdgeLabel2()).getRDFNode()), TripleComponentRole.PREDICATE);
+        Long el1 = dict.stringToId(pIndex.getBounded(digram.getEdgeLabel1()).getRDFNode(), TripleComponentRole.PREDICATE);
+        Long el2 = dict.stringToId(pIndex.getBounded(digram.getEdgeLabel2()).getRDFNode(), TripleComponentRole.PREDICATE);
         pIndex.getBounded(digram.getEdgeLabel1()).setHdtIndex(el1.intValue());
         pIndex.getBounded(digram.getEdgeLabel1()).setHdtIndex(el2.intValue());
         digram.setEdgeLabel1(el1.intValue());

@@ -138,7 +138,6 @@ public class KD2Tree {
         this.labelId = labelId;
     }
 
-    //TODO check if it does what it should
     public List<List<Byte>> createPaths() {
         Set<TreeNode> leaves = new HashSet<TreeNode>();
         List<TreeNode> order = new ArrayList<TreeNode>();

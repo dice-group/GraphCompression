@@ -18,11 +18,11 @@ public class FullTest {
     @Test
     public void test() throws FileNotFoundException {
         Model m1 = ModelFactory.createDefaultModel();
-        m1.read(new FileReader("./mapping.ttl"), null, "TTL");
+        m1.read(new FileReader("/home/minimal/work/datasets/swdfu8.nt"), null, "TTL");
 
 
         Model m2 = ModelFactory.createDefaultModel();
-        m2.read(new FileReader("./mapping_rev.ttl"), null, "TTL");
+        m2.read(new FileReader("/home/minimal/swdf_grp2.ttl"), null, "TTL");
         //assertTrue(m1.isIsomorphicWith(m2));
         List<Statement> expected = m1.listStatements().toList();
         Collections.sort(expected, new Comparator<Statement>() {

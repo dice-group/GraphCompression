@@ -19,7 +19,7 @@ public class Grammar {
 	private BoundedList props;
 	private Map<Integer, Digram> rules = new HashMap<Integer, Digram>();
 	private Map<Digram, List<DigramOccurence>> replaced = new HashMap<Digram, List<DigramOccurence>>();
-	private List<Node> soIndex;
+	private List<String> soIndex;
 
 
 	private List<Statement> stmts =new ArrayList<Statement>();
@@ -82,11 +82,11 @@ public class Grammar {
 	}
 
 
-    public void setSOIndex(List<Node> soIndex) {
+    public void setSOIndex(List<String> soIndex) {
 		this.soIndex = soIndex;
     }
 
-	public List<Node> getSOIndex() {
+	public List<String> getSOIndex() {
 		return this.soIndex;
 	}
 
@@ -102,6 +102,10 @@ public class Grammar {
     public int getVSize() {
 		return this.vSize;
     }
+
+	public void setVSize(int i) {
+		this.vSize = i;
+	}
 }
 
 

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import grph.Grph;
+import org.apache.jena.base.Sys;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.impl.LiteralLabel;
 import org.apache.jena.graph.impl.LiteralLabelFactory;
@@ -480,6 +481,7 @@ public class DigramHelper<T>{
 		DigramOccurence occ = new DigramOccurence(stmt1, stmt2, externals);
 		occ.setOrigE1(d);
 		occ.setOrigE2(e);
+
 		return occ;
 	}
 

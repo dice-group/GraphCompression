@@ -41,6 +41,7 @@ import org.dice_group.grp.index.impl.URIBasedIndexer;
 import org.dice_group.grp.util.*;
 import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.TempDictionary;
+import org.rdfhdt.hdt.dictionary.impl.PSFCFourSectionDictionary;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.exceptions.ParserException;
@@ -81,17 +82,20 @@ public class RDFCompressor {
 
 		long s = Calendar.getInstance().getTimeInMillis();
 		//Model graph = readFileToModel(rdfFile);
-		SortedSet<PTriple> triples = readFileToTriples(rdfFile);
+		List<String> soIndex= new ArrayList<String>();
+		HDTSpecification spec = new HDTSpecification();
+		spec.set("tempDictionary.impl", DictionaryFactory.MOD_DICT_IMPL_HASH_PSFC);
+
+		dict = DictionaryFactory.createTempDictionary(spec);
+
+		SortedSet<PTriple> triples = readFileToTriples(rdfFile, soIndex);
 		long e = Calendar.getInstance().getTimeInMillis();
 		System.out.println("reading took " + (e - s) + " ms");
 
 		// Map<Long, String> dict = new HashMap<Long, String>();
-		HDTSpecification spec = new HDTSpecification();
-		spec.set("dictionary.type", HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION);
 
-		dict = DictionaryFactory.createTempDictionary(spec);
 
-		Grammar grammar = createGrammar(triples, rdfFile);
+		Grammar grammar = createGrammar(triples, rdfFile, soIndex);
 		Map<Integer, Integer> map= new HashMap<Integer, Integer>();
 		/*
 		for (int edge : grammar.getStart().getEdges()){
@@ -109,16 +113,16 @@ public class RDFCompressor {
 		Stats.printMemStats();
 		System.gc();
 		GRPWriter.save(out, grammar, indexer.getDict(), kd2Flag, threaded);
+		GrammarHelper.reset();
 		return new File(out);
 	}
 
-	public Grammar createGrammar(SortedSet<PTriple> graph, File f) throws NotAllowedInRDFException, IOException {
+	public Grammar createGrammar(SortedSet<PTriple> graph, File f, List<String> soIndex) throws NotAllowedInRDFException, IOException {
 		long origSize = graph.size();
 
 		long s = Calendar.getInstance().getTimeInMillis();
 
 
-		List<Node> soIndex= new ArrayList<Node>();
 		BoundedList pIndex = new BoundedList();
 		Grph g = this.rdfToGrph(graph, soIndex, pIndex, new InMemoryGrph());
 
@@ -165,10 +169,14 @@ public class RDFCompressor {
 			}
 			Set<Integer> le = new HashSet<Integer>();
 			List<DigramOccurence> replaced = new ArrayList<DigramOccurence>();
-			int uriNT = replaceAllOccurences(digrams.get(mfd), g, le, pIndex, replaced);
+			if(mfd.getStructure()==4){
+				System.out.println();
+			}
+			Integer uriNT = replaceAllOccurences(digrams.get(mfd), g, le, pIndex, replaced);
+
 			System.out.println("Graph size " + g.getEdges().size());
 
-			if (replaced == null) {
+			if (replaced == null || uriNT ==null) {
 
 				digrams.remove(mfd);
 				frequenceList.remove(mfd);
@@ -204,7 +212,7 @@ public class RDFCompressor {
 			}
 			Map<Integer, Integer> map= new HashMap<Integer, Integer>();
 			for (int edge : grammar.getStart().getEdges()){
-				String uri = grammar.getProps().getBounded(edge).getRDFNode().getURI();
+				String uri = grammar.getProps().getBounded(edge).getRDFNode();
 				if(uri.startsWith(GrammarHelper.NON_TERMINAL_PREFIX)) {
 					Integer ix = Integer.valueOf(uri.replace(GrammarHelper.NON_TERMINAL_PREFIX, ""));
 					map.putIfAbsent(ix, 0);
@@ -219,7 +227,7 @@ public class RDFCompressor {
 		e = Calendar.getInstance().getTimeInMillis();
 		System.out.println("Grammar compression took " + (e - s) + " ms");
 		System.out.println("Grammar done. Onto indexing & serialization...");
-
+		grammar.setVSize(grammar.getVSize()+grammar.getRules().size());
 		return grammar;
 
 	}
@@ -242,6 +250,9 @@ public class RDFCompressor {
 	protected Integer replaceAllOccurences(List<DigramOccurence> collection,
 			Grph  g, Set<Integer> checkEdges, BoundedList pIndex, List<DigramOccurence> replaced) {
 		//use BoundedList for NonTerminals too
+		if(collection.isEmpty()){
+			return null;
+		}
 		IndexedRDFNode node = new IndexedRDFNode();
 		boolean first = true;
 		Integer firstNT=-1;
@@ -261,7 +272,7 @@ public class RDFCompressor {
 			if(first){
 				firstNT=nt;
 				node.setLowerBound(nt);
-				node.setRDFNode(ResourceFactory.createResource(uri).asNode());
+				node.setRDFNode(uri);
 				pIndex.add(node);
 				first=false;
 			}
@@ -287,6 +298,11 @@ public class RDFCompressor {
 				}
 
 			List<Integer> ext = occ.getExternals();
+			//if(uri.equals("http://n.1")){
+				if(occ.getExternals().contains(3770)){
+					System.out.println();
+				}
+			//}
 			if (occ.getExternals().size() == 1) {
 				Integer s = occ.getExternals().get(0);
 				g.addSimpleEdge(s, nt ,s, true);
@@ -332,13 +348,29 @@ public class RDFCompressor {
 		return ModelFactory.createDefaultModel().read(new FileReader(rdfFile), null, lang.getLabel());
 	}
 
-	private SortedSet<PTriple> readFileToTriples(File rdfFile) throws FileNotFoundException {
+	private SortedSet<PTriple>  readFileToTriples(File rdfFile, List<String> soIndex) throws FileNotFoundException {
 		Lang lang = RDFLanguages.filenameToLang(rdfFile.getName());
-		List<Triple> triples = new ArrayList();
+		//List<Triple> triples = new ArrayList();
+		RDFNotation notation = RDFNotation.guess(rdfFile);
+		RDFParserCallback parser = RDFParserFactory.getParserCallback(notation);
 
-
+		//TODO can we get a boundedlist
 		SortedSet<PTriple> set = new TreeSet<PTriple>();
 
+		//Map<Integer, List<PTriple2>> map = new HashMap<Integer, List<PTriple2>>();
+		//we know the keySet implicitly 1 ... map.size()
+		try {
+			parser.doParse(rdfFile.getAbsolutePath(), "", notation, new RDFParserCallback.RDFCallback() {
+				@Override
+				public void processTriple(TripleString triple, long pos) {
+
+					set.add(new PTriple(triple.getSubject().toString(), triple.getPredicate().toString(), triple.getObject().toString()));
+				}
+			});
+		} catch (ParserException e) {
+			e.printStackTrace();
+		}
+		/*
 		StreamRDF stream = new StreamRDF() {
 
 			@Override
@@ -368,9 +400,9 @@ public class RDFCompressor {
 			}
 		};
 		RDFDataMgr.parse(stream, new FileInputStream(rdfFile), lang);
-
-
+		*/
 		return set;
+		//return set;
 	}
 
 	/**
@@ -383,8 +415,7 @@ public class RDFCompressor {
 	 * @param g Grph to convert to
 	 * @return converter Grph Object
 	 */
-	private Grph rdfToGrph(SortedSet<PTriple> m, List<Node> soIndex, BoundedList propertyIndex, Grph g){
-		//FIXME This Solution needs too much RAM, iterator and removing is not a good idea, better stream and otf
+	private Grph rdfToGrph(SortedSet<PTriple> m, List<String> soIndex, BoundedList propertyIndex, Grph g){
 		//sort after properties
 		/*List<Statement> stmts = m.listStatements().toList();
 		m.remove(stmts);
@@ -396,16 +427,21 @@ public class RDFCompressor {
 		});
 		*/
 
+
 		int p = 0;
-		Node oldP = null;
+		String oldP = null;
 		Map<Integer, Integer> nodeID = new HashMap<Integer, Integer>();
+
+		//for i in (1...map.size()) map get at i -> for each PTriple2() add
+
 		for(PTriple t : m){
+
 			int s = getNodeIndex(t.getSubject(), soIndex, nodeID);
 			IndexedRDFNode iNode = new IndexedRDFNode();
 			iNode.setRDFNode(t.getPredicate());
 			//basically just check if the last RDFNode was the same
 			//int i = propertyIndex.indexOf(iNode);
-			if(oldP!=null && oldP.toString().equals(t.getPredicate().toString())){
+			if(oldP!=null && oldP.equals(t.getPredicate())){
 				// if exists, just set upper bound
 				iNode = propertyIndex.get(propertyIndex.size()-1);
 				iNode.setUpperBound(iNode.getUpperBound()+1);
@@ -426,21 +462,29 @@ public class RDFCompressor {
 			//soIndex.add(stmt.getObject());
 			g.addSimpleEdge(s, p++, o,
 					true);
-			if(p% 100000 ==0){
+			if(p% 1000000 ==0){
 				System.out.println("Converted "+p+" edges");
 			}
 		}
+
+
 		//Stats.printStats(g, propertyIndex);
+		BlankNodeIDGenerator.reset();
 		m.clear();
 		return g;
 	}
 
-	private int getNodeIndex(Node node, List<Node> index, Map<Integer, Integer> nodeID) {
+	private int getNodeIndex(String node, List<String> index, Map<Integer, Integer> nodeID) {
 		//maybe as tmpIndex directly
 		// int n = index.indexOf(node);
 		int ret =  addObject(node, dict).intValue();
 		if(ret>index.size()){
-			index.add(node);
+			if(node.startsWith("_:")) {
+				index.add("_:"+BlankNodeIDGenerator.getID(node));
+			}
+			else {
+				index.add(node);
+			}
 		}
 		else{
 			System.out.print("");
@@ -451,13 +495,19 @@ public class RDFCompressor {
 		//return index.size()-1;
 	}
 
-	private Long addObject(Node n, TempDictionary dict){
+	private Long addObject(String n, TempDictionary dict){
 		Long o1;
-		if(n.isLiteral()){
-			o1 = dict.insert(escape(NodeDictionary.nodeToStr(n)), TripleComponentRole.OBJECT);
+		if(n.startsWith("\"") || n.startsWith("\'")){
+			//o1 = dict.insert(escape(n), TripleComponentRole.OBJECT);
+			o1 = dict.insert(n, TripleComponentRole.OBJECT);
+
+		}
+		else if(n.startsWith("_:")){
+			//blank node
+			o1 = dict.insert("_:"+BlankNodeIDGenerator.getID(n), TripleComponentRole.OBJECT);
 		}
 		else {
-			o1 = dict.insert(NodeDictionary.nodeToStr(n), TripleComponentRole.OBJECT);
+			o1 = dict.insert(n, TripleComponentRole.OBJECT);
 		}
 		if(o1==-1){
 			System.out.println();
