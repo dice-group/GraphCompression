@@ -5,20 +5,21 @@ Further on provides an even smaller compression using KD2 Trees.
 
 # Download and install
 
-1. Download standalone.zip from the latest release. 
+## General
+Download standalone.zip from the latest release. 
 ```bash
 wget https://.../standalone.zip
 unzip standalone.zip
 cd rdfrepair
 ```
 
-2. Ubuntu and Debian: 
+## Ubuntu and Debian: 
 Download deb package install using 
 ```
 not yet ready
 ```
 
-3. Arch Linux: 
+## Arch Linux: 
 NOT READY YET!
 ```bash
 yaourt -S rdfrepair
