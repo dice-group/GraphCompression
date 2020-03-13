@@ -1,4 +1,4 @@
-![Logo](https://github.com/dice-group/GraphCompression/blob/develop/logo.png)
+<img src="https://github.com/dice-group/GraphCompression/blob/develop/logo.png" width="250" alt="Logo">
 Compression of RDF graphs using the gRePair algorithm. 
 Further on provides an even smaller compression using KD2 Trees. 
 
