@@ -47,25 +47,25 @@ public class CompressionParametersTest {
     @Test
     public void testPD() throws InterruptedException, NotAllowedInRDFException, NotSupportedException, ExecutionException, IOException {
             //mainly weird digrams and combination of digrams
-            Main.compress("src/test/persondata_en.ttl", "src/test/persondata_en.ttl.grp", c1, c2, c3);
-            Main.decompress("src/test/persondata_en.ttl.grp", "src/test/persondata_en.ttl.grp.nt", c1,  c4, "N-TRIPLE");
+            Main.compress("src/test/resources/persondata_en.ttl", "src/test/resources/persondata_en.ttl.grp", c1, c2, c3);
+            Main.decompress("src/test/resources/persondata_en.ttl.grp", "src/test/resources/persondata_en.ttl.grp.nt", c1,  c4, "N-TRIPLE");
 
-            checkEqual("src/test/persondata_en.ttl", "src/test/persondata_en.ttl.grp.nt");
+            checkEqual("src/test/resources/persondata_en.ttl", "src/test/resources/persondata_en.ttl.grp.nt");
 
-            new File("src/test/persondata_en.ttl.grp").delete();
-            new File("src/test/persondata_en.ttl.grp.nt").delete();
+            new File("src/test/resources/persondata_en.ttl.grp").delete();
+            new File("src/test/resources/persondata_en.ttl.grp.nt").delete();
     }
 
     @Test
     public void testGO() throws InterruptedException, NotAllowedInRDFException, NotSupportedException, ExecutionException, IOException {
             // mainly literals and datatypes testing
-            Main.compress("src/test/geo_coordinates_en.ttl", "src/test/geo_coordinates_en.ttl.grp", c1, c2, c3);
-            Main.decompress("src/test/geo_coordinates_en.ttl.grp", "src/test/geo_coordinates_en.ttl.grp.ttl", c1, c4, "TURTLE");
+            Main.compress("src/test/resources/geo_coordinates_en.ttl", "src/test/resources/geo_coordinates_en.ttl.grp", c1, c2, c3);
+            Main.decompress("src/test/resources/geo_coordinates_en.ttl.grp", "src/test/resources/geo_coordinates_en.ttl.grp.ttl", c1, c4, "TURTLE");
 
-            checkEqual("src/test/geo_coordinates_en.ttl", "src/test/geo_coordinates_en.ttl.grp.ttl");
+            checkEqual("src/test/resources/geo_coordinates_en.ttl", "src/test/resources/geo_coordinates_en.ttl.grp.ttl");
 
-            new File("src/test/geo_coordinates_en.ttl.grp").delete();
-            new File("src/test/geo_coordinates_en.ttl.grp.ttl").delete();
+            new File("src/test/resources/geo_coordinates_en.ttl.grp").delete();
+            new File("src/test/resources/geo_coordinates_en.ttl.grp.ttl").delete();
 
     }
 
