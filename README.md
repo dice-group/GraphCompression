@@ -1,4 +1,6 @@
-![Logo](https://github.com/dice-group/GraphCompression/raw/develop/logo.png =250x290)
+![Logo][logo]
+
+[logo]: https://github.com/dice-group/GraphCompression/raw/develop/logo.png "RDFRePair Logo"
 
 Compression of RDF graphs using the gRePair algorithm. 
 Further on provides an even smaller compression using KD2 Trees. 
