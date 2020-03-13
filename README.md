@@ -1,5 +1,4 @@
-<img src="https://github.com/dice-group/GraphCompression/blob/develop/logo.png" width="250" alt="Logo" align="middle">
-
+![Logo](https://github.com/dice-group/GraphCompression/blob/develop/logo.png)
 Compression of RDF graphs using the gRePair algorithm. 
 Further on provides an even smaller compression using KD2 Trees. 
 
@@ -61,7 +60,7 @@ Depending on the size it may take a bit to load.
 # Download precompressed files
 Name | Size | Triples | Link
 ------------ | ------------- | -------------  | -------------
-ArchivesHub | | 1361815 | 
-Jamendo | | 1047950 | 
-ScholaryData (rich) | | 859840 |
-DBLP 2017 | | 88150324 | 
+ArchivesHub | | 1.361.815 | 
+Jamendo | | 1.047.950 | 
+ScholaryData (rich) | | 859.840 |
+DBLP 2017 | | 88.150.324 | 
