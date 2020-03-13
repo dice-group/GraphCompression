@@ -84,7 +84,7 @@ Depending on the size it may take a bit to load.
 # Download precompressed files
 Name | Size | Triples | Link
 ------------ | ------------- | -------------  | -------------
-ArchivesHub | | 1.361.815 | 
-Jamendo | | 1.047.950 | 
-ScholaryData (rich) | | 859.840 |
-DBLP 2017 | | 88.150.324 | 
+ArchivesHub | 13MB | 1.361.815 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/ArchivesHub_04-03-2014.kd2)
+Jamendo | 12MB | 1.047.950 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/jamendo.kd2)
+ScholaryData (rich) | 7.3MB | 859.840 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/scholarydata.kd2)
+DBLP 2017 | 773MB | 88.150.324 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/dblp-01-24-2017.kd2)
