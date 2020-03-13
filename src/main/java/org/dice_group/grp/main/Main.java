@@ -38,16 +38,7 @@ public class Main {
 			return;
 		}
 		if(args[0].equals("-c")){
-			if(args[1].toLowerCase().equals("-crs")){
-				if(args[2].toLowerCase().equals("-digrams")){
-					compress(args[3], args[4], false, false, false);
-				}
-				else{
-					compress(args[2], args[3], false, true, false);
-
-				}
-			}
-			else if(args[1].toLowerCase().equals("-kd2")){
+			if(args[1].toLowerCase().equals("-kd2")){
 				if(args[2].toLowerCase().equals("-digrams")){
 					compress(args[3], args[4], true, false, false);
 				}
@@ -100,13 +91,17 @@ public class Main {
 	}
 
 	public static void printHelp(){
-		System.out.println("grp [-c|-d] options [-crs|-kd2|-tkd2] in out");
+		System.out.println("grp [-c|-d] options [-kd2|-tkd2] [-digrams] in out");
 		System.out.println("\t-c\tcompress RDF File");
 		System.out.println("\t-d\tdecompress GRP File");
 		System.out.println();
-		System.out.println("\t-crs\t(de)serialize using CRS (deprecated)");
 		System.out.println("\t-kd2\t(de)serialize using KD2 TREE");
 		System.out.println("\t-tkd2\t(de)serialize using Threaded KD2 Tree");
+
+		System.out.println();
+		System.out.println("\tCompress only");
+		System.out.println("\t-digrams\tuse gRePair algorithm");
+
 		System.out.println();
 		System.out.println("\tDecompress Options");
 		System.out.println("\t-out: N-TRIPLE, TURTLE, RDF/XML - will save output in the format specified");
