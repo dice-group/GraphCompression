@@ -47,13 +47,13 @@ rdfrepair -d -out TURTLE -tkd2 IN_FILE.grp OUT_FILE.ttl
 
 # Querying KD2 with Fuseki
 
-1. Download the latest apache jena fuseki from https://jena.apache.org/download/#jena-fuseki
+1. Download the latest [apache jena fuseki](https://jena.apache.org/download/#jena-fuseki)
 2. Copy the rdfrepair-1.0.jar from the latest release to `run/extra/` in the fuseki folder. 
-3. Download the fuseki_example.ttl from https://github.com/dice-group/GraphCompression/blob/develop/fuseki_example.ttl
+3. Download the [fuseki_example.ttl](https://github.com/dice-group/GraphCompression/blob/develop/fuseki_example.ttl)
 4. change the last line fileName to the actual fileName of your KD2 compressed file. 
 5. Start fuseki using `fuseki-server --config=fuseki_example.ttl` 
 
-You can reach the read-only service at http://localhost:3030/kd2/sparql 
+You can reach the read-only service at [http://localhost:3030/kd2/sparql](http://localhost:3030/kd2/sparql)
 
 Depending on the size it may take a bit to load. 
 
