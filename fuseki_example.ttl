@@ -1,4 +1,3 @@
-
 @prefix :        <#> .
 @prefix fuseki:  <http://jena.apache.org/fuseki#> .
 @prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -8,37 +7,32 @@
 @prefix ja:      <http://jena.hpl.hp.com/2005/11/Assembler#> .
 
 [] rdf:type fuseki:Server ;
-   # Timeout - server-wide default: milliseconds.
-   # Format 1: "1000" -- 1 second timeout
-   # Format 2: "10000,60000" -- 10s timeout to first result, then 60s timeout for the rest of query.
-   # See java doc for ARQ.queryTimeout
-   # ja:context [ ja:cxtName "arq:queryTimeout" ;  ja:cxtValue "10000" ] ;
-
-   # IMPORTANT: Import the HDT Assembler
    ja:loadClass "org.dice_group.grp.fuseki.KD2GraphAssembler" ;
-
+	
    fuseki:services (
      <#service1>
-   ) .
+   )    .
 
-# HDT Classes
 dice:KD2Graph rdfs:subClassOf ja:Graph .
 
 ## ---------------------------------------------------------------
 ## Currently only Read only is possible, writing in memory is theoretically possible, but persistence is not
 
 <#service1> rdf:type fuseki:Service ;
-    fuseki:name                     "service" ;
-    fuseki:serviceQuery             "query" ;
-    fuseki:serviceReadGraphStore    "get" ;
+    rdfs:label                         "KD2" ;    
+    fuseki:name                     "kd2"  ;
+    fuseki:serviceQuery                "" ;
+    fuseki:serviceQuery                "sparql" ;
+    fuseki:serviceQuery                "query" ;
+    fuseki:serviceReadGraphStore       "get" ;
+    fuseki:serviceReadQuads            "" ;
     fuseki:dataset                   <#dataset> .
 
 <#dataset> rdf:type ja:RDFDataset ;
     rdfs:label "Dataset" ;
-    ja:defaultGraph <#graph1>
-    .
+    ja:defaultGraph <#graph1>    .
 
 ## You can add several graphs
-<#graph> rdfs:label "KD2 compressed file containing the dataset" ;
+<#graph1> rdfs:label "KD2 compressed file containing the dataset" ;
         rdf:type dice:KD2Graph ;
         dice:fileName "file.grp" .
