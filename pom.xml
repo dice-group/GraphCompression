@@ -190,4 +190,14 @@
 
 
 	</repositories>
+
+
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub dice-group Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/dice-group/GraphCompression</url>
+		</repository>
+	</distributionManagement>
+
 </project>
