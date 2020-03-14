@@ -41,8 +41,7 @@ public class KD2Graph extends GraphBase {
         //          :s ?p ?o -> get all points for all matrices with row
         //          :s ?p :o -> get specific point for all matrices
         TripleID ids = getTriplePatID(triplePattern);
-        System.out.println(triplePattern);
-        System.out.println(ids);
+
         KD2JenaIterator it = new KD2JenaIterator(dict);
         //Node does not exist in Dict
         if(ids.getPredicate()==-1|| ids.getSubject()==-1 || ids.getObject()==-1){
