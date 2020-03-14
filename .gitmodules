@@ -1,6 +1,0 @@
-[submodule "RDFCompressionBenchmark"]
-	path = RDFCompressionBenchmark
-	url = https://github.com/ph1l1pF/RDFCompressionBenchmark
-[submodule "hdt-java"]
-	path = hdt-java
-	url = https://github.com/dice-group/hdt-java
