@@ -13,7 +13,7 @@ Further on provides an even smaller compression using KD2 Trees.
 
 Download standalone.zip from the latest release. 
 ```bash
-wget https://.../standalone.zip
+wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/standalone.zip
 unzip standalone.zip
 cd rdfrepair
 ```
@@ -39,7 +39,7 @@ Add the following to your pom
 <dependency>
   <groupId>org.dice-group</groupId>
   <artifactId>RDFRePair</artifactId>
-  <version>1.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -82,7 +82,7 @@ export RDF_RE_PAIR_XMX=4g
 Download fuseki-kd2.tar.gz from the latest release
 
 ```bash
-wget http://.../fuseki-kd2.tar.gz
+wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/fuseki-kd2.tar.gz
 tar -xzvf fuseki-kd2.tar.gz
 cd apache-jena-fuseki-3.13.1/
 cp YOUR_KD2_COMPRESSED_FILE file.grp
@@ -93,7 +93,7 @@ cp YOUR_KD2_COMPRESSED_FILE file.grp
 ### From scratch
 
 1. Download the latest [apache jena fuseki](https://jena.apache.org/download/#jena-fuseki)
-2. Copy the rdfrepair-1.0.jar from the latest release to `run/extra/` in the fuseki folder. 
+2. Copy the [rdfrepair-1.0.jar](https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/rdfrepair-1.0.jar) from the latest release to `run/extra/` in the fuseki folder. 
 3. Download the [fuseki_example.ttl](https://github.com/dice-group/GraphCompression/blob/develop/fuseki_example.ttl)
 4. change the last line fileName to the actual fileName of your KD2 compressed file. 
 5. Start fuseki using `fuseki-server --config=fuseki_example.ttl` 
@@ -102,6 +102,27 @@ You can reach the read-only service at [http://localhost:3030/kd2/sparql](http:/
 
 Depending on the size it may take a bit to load. 
 
+
+### Using mutliple compressed files in one graph
+
+If you want to use multiple kd2 compressed files in one graph download fuseki-kd2.tar.gz from the latest release and 
+instead of copying one file to file.grp copy all your kd2 compressed files to `apache-jena-fuseki-3.13.1/kd2_files/`
+
+```
+wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/fuseki-kd2.tar.gz
+tar -xzvf fuseki-kd2.tar.gz
+cd apache-jena-fuseki-3.13.1/
+cp YOUR_KD2_COMPRESSED_FILES kd2_files/
+./fuseki-server --config=kd2_multi_file.ttl
+```
+
+Alternatevly (un)comment the following in your config file:
+```
+        #rdf:type dice:KD2Graph ;
+        #dice:fileName "file.grp" .
+        rdf:type dice:KD2Graph ;  #If you want several compressed files to be loaded in one graph
+        dice:folder "./kd2_files/" . #If you want several compressed files to be loaded in one graph
+```
 
 # Download precompressed files
 Name | Size | Triples | Link
