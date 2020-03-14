@@ -30,6 +30,26 @@ NOT READY YET!
 yaourt -S rdfrepair
 ```
 
+### Maven
+
+Add the following to your pom 
+```XML
+<dependency>
+  <groupId>org.dice-group</groupId>
+  <artifactId>RDFRePair</artifactId>
+  <version>1.0</version>
+</dependency>
+```
+
+and 
+```XML
+<repository>
+  <id>github_dice-group_GraphCompression</id>
+  <name>GitHub dice-group Apache Maven Packages</name>
+  <url>https://maven.pkg.github.com/dice-group/GraphCompression</url>
+</repository>
+```
+
 # Usage
 
 Compression using KD2 Trees
