@@ -1,3 +1,5 @@
+![Java CI with Maven](https://github.com/dice-group/GraphCompression/workflows/Java%20CI%20with%20Maven/badge.svg)
+
 ![Logo][logo]
 
 [logo]: https://github.com/dice-group/GraphCompression/raw/develop/logo.png "RDFRePair Logo"
