@@ -7,15 +7,13 @@
 @prefix ja:      <http://jena.hpl.hp.com/2005/11/Assembler#> .
 
 [] rdf:type fuseki:Server ;
-   ja:loadClass "org.dice_group.grp.fuseki.KD2GraphAssembler" ;
-   ja:loadClass "org.dice_group.grp.fuseki.MutlipleKD2GraphAssembler" ;
+   ja:loadClass "org.dice_group.grp.fuseki.MultipleKD2GraphAssembler" ;
 	
    fuseki:services (
      <#service1>
    )    .
 
-dice:KD2Graph rdfs:subClassOf ja:Graph .
-dice:MutlipleKD2Graph rdfs:subClassOf ja:Graph .
+dice:MultipleKD2Graph rdfs:subClassOf ja:Graph .
 
 ## ---------------------------------------------------------------
 ## Currently only Read only is possible, writing in memory is theoretically possible, but persistence is not
@@ -36,10 +34,5 @@ dice:MutlipleKD2Graph rdfs:subClassOf ja:Graph .
 
 ## You can add several graphs
 <#graph1> rdfs:label "KD2 compressed file containing the dataset" ;
-        rdf:type dice:KD2Graph ;
-        dice:fileName "file.grp" .
-        #rdf:type dice:KD2Graph ;  #If you want several compressed files to be loaded in one graph
-        #dice:folder "./kd2_files/" . #If you want several compressed files to be loaded in one graph
-
-
-
+        rdf:type dice:MultipleKD2Graph ;
+        dice:folder "src/test/resources/fuseki/" .
