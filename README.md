@@ -127,6 +127,7 @@ Alternatevly (un)comment the following in your config file:
 # Download precompressed files
 Name | Size | Triples | Link
 ------------ | ------------- | -------------  | -------------
+DBpedia 10-2016 sections, without NIF and long_abstracts |  |  | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/dbpedia-10-2016/)
 ArchivesHub | 13MB | 1.361.815 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/ArchivesHub_04-03-2014.kd2)
 Jamendo | 12MB | 1.047.950 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/jamendo.kd2)
 ScholaryData (rich) | 7.3MB | 859.840 | [Download](https://hobbitdata.informatik.uni-leipzig.de/rdfrepair/scholarydata.kd2)
