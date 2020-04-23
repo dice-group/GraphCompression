@@ -13,7 +13,7 @@ Further on provides an even smaller compression using KD2 Trees.
 
 Download standalone.zip from the latest release. 
 ```bash
-wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/standalone.zip
+wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.2/standalone.zip
 unzip standalone.zip
 cd rdfrepair
 ```
@@ -39,7 +39,7 @@ Add the following to your pom
 <dependency>
   <groupId>org.dice-group</groupId>
   <artifactId>RDFRePair</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
 </dependency>
 ```
 
@@ -72,7 +72,7 @@ rdfrepair -d -out TURTLE -tkd2 IN_FILE.grp OUT_FILE.ttl
 To adjust the RAM usage to 4GB use the following:
 
 ```
-export RDF_RE_PAIR_XMX=4g
+export RDF_RE_PAIR_XMX=-Xmx4g
 ```
 
 # Querying KD2 with Fuseki
@@ -82,7 +82,7 @@ export RDF_RE_PAIR_XMX=4g
 Download fuseki-kd2.tar.gz from the latest release
 
 ```bash
-wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/fuseki-kd2.tar.gz
+wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.2/fuseki-kd2.tar.gz
 tar -xzvf fuseki-kd2.tar.gz
 cd apache-jena-fuseki-3.13.1/
 cp YOUR_KD2_COMPRESSED_FILE file.grp
@@ -109,7 +109,7 @@ If you want to use multiple kd2 compressed files in one graph download fuseki-kd
 instead of copying one file to file.grp copy all your kd2 compressed files to `apache-jena-fuseki-3.13.1/kd2_files/`
 
 ```
-wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/fuseki-kd2.tar.gz
+wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.2/fuseki-kd2.tar.gz
 tar -xzvf fuseki-kd2.tar.gz
 cd apache-jena-fuseki-3.13.1/
 cp YOUR_KD2_COMPRESSED_FILES kd2_files/
