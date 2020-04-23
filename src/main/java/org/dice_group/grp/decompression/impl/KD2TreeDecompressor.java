@@ -77,7 +77,7 @@ public class KD2TreeDecompressor implements GrammarDecompressor {
 
             for(Point p : matrix.getPoints()){
                 Node subject = dict.getNode(p.getRow(), TripleComponentRole.OBJECT);
-                Node object = dict.getNode(p.getRow(), TripleComponentRole.OBJECT);
+                Node object = dict.getNode(p.getCol(), TripleComponentRole.OBJECT);
 
                 if(ntID !=null){
                     nonTerminalEdges.add(new Statement(p.getRow(),ntID, p.getCol()));
