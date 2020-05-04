@@ -93,7 +93,7 @@ cp YOUR_KD2_COMPRESSED_FILE file.grp
 ### From scratch
 
 1. Download the latest [apache jena fuseki](https://jena.apache.org/download/#jena-fuseki)
-2. Copy the [rdfrepair-1.0.jar](https://github.com/dice-group/GraphCompression/releases/download/v1.0.1/rdfrepair-1.0.jar) from the latest release to `run/extra/` in the fuseki folder. 
+2. Copy the [rdfrepair-1.0.2.jar](https://github.com/dice-group/GraphCompression/releases/download/v1.0.2/rdfrepair-1.0.2.jar) from the latest release to `run/extra/` in the fuseki folder. 
 3. Download the [fuseki_example.ttl](https://github.com/dice-group/GraphCompression/blob/develop/fuseki_example.ttl)
 4. change the last line fileName to the actual fileName of your KD2 compressed file. 
 5. Start fuseki using `fuseki-server --config=fuseki_example.ttl` 
