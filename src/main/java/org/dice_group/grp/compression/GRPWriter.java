@@ -1,28 +1,19 @@
 package org.dice_group.grp.compression;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.jena.graph.Node;
-import org.dice_group.grp.compression.impl.CRSCompressor;
-import org.dice_group.grp.compression.impl.KD2TreeCompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
-import org.dice_group.grp.grammar.Grammar;
-import org.dice_group.grp.grammar.Statement;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
-import org.rdfhdt.hdt.enums.TripleComponentRole;
 import org.rdfhdt.hdt.listener.ProgressOut;
 import org.rdfhdt.hdt.options.ControlInfo;
 import org.rdfhdt.hdt.options.ControlInformation;
-import org.rdfhdt.hdtjena.NodeDictionary;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Calendar;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Compresses the resulting Grammar and Dictionary into 
@@ -36,37 +27,66 @@ public class GRPWriter {
 
 	public static final String DICTIONARY_ENTRY_NAME = "dict";
 	public static final String GRAMMAR_ENTRY_NAME = "grammar";
+	private final String output;
+	//private final TarArchiveOutputStream taos;
 
-	public static void save(String output,Grammar grammar, DictionaryPrivate dictionaryPrivate, Boolean kd2Flag, Boolean threaded) throws NotSupportedException, IOException, ExecutionException, InterruptedException {
-		GrammarCompressor compressor;
-		if(kd2Flag){
-			compressor = new KD2TreeCompressor(threaded);
-		}else {
-			compressor = new CRSCompressor();
+	private final FileOutputStream faos;
+	private final FileOutputStream faosDict;
+
+
+
+	public GRPWriter(String output) throws FileNotFoundException {
+		this.output=output;
+		FileOutputStream fos = new FileOutputStream(output);
+		//GzipCompressorOutputStream gzip = new GzipCompressorOutputStream(fos);
+		//taos = new TarArchiveOutputStream(fos);
+		faos = fos;
+		faosDict  = new FileOutputStream(output+".dict");
+	}
+
+	public void saveDict(DictionaryPrivate dictionaryPrivate){
+		try {
+
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ControlInformation ci = new ControlInformation();
+			ci.setType(ControlInfo.Type.DICTIONARY);
+			TarArchiveEntry dictEntry = new TarArchiveEntry(DICTIONARY_ENTRY_NAME);
+			dictEntry.setSize(dictionaryPrivate.size());
+			//taos.putArchiveEntry(dictEntry);
+
+			dictionaryPrivate.save(faosDict, ci, new ProgressOut());
+			//taos.write(baos.toByteArray());
+			//taos.closeArchiveEntry();
+			faosDict.close();
+		}catch(Exception e) {
+			e.printStackTrace();
 		}
+
+	}
+
+
+	public void save(GrammarCompressor compressor, DictionaryPrivate dictionaryPrivate, Boolean threaded, long sSize, long oSize) throws NotSupportedException, IOException, ExecutionException, InterruptedException {
+
+
 		long start = Calendar.getInstance().getTimeInMillis();
 
-		byte[][] serializedGrammar = compressor.compress(grammar);
+		byte[] serializedGrammar = compressor.compress(sSize, oSize);
 		long end = Calendar.getInstance().getTimeInMillis();
 		System.out.println("Serialization took "+(end-start)+" ms");
 		
 		
-		try(FileOutputStream fos = new FileOutputStream(output);
-				//GzipCompressorOutputStream gzip = new GzipCompressorOutputStream(fos);
-				TarArchiveOutputStream taos = new TarArchiveOutputStream(fos);){
-			TarArchiveEntry grammarEntry = new TarArchiveEntry(GRAMMAR_ENTRY_NAME);
+		try{
+			//TarArchiveEntry grammarEntry = new TarArchiveEntry(GRAMMAR_ENTRY_NAME);
 			long grammarSize=0;
 			long dictSize=0;
-			for(byte[] ser : serializedGrammar) {
-				grammarSize+=ser.length;
-			}
-			grammarEntry.setSize(grammarSize);
-			taos.putArchiveEntry(grammarEntry);
-			for(byte[] ser : serializedGrammar) {
-				taos.write(ser);
-			}
-			taos.closeArchiveEntry();
-			
+			grammarSize+=serializedGrammar.length;
+			//grammarEntry.setSize(grammarSize);
+			//taos.putArchiveEntry(grammarEntry);
+			//taos.write(serializedGrammar);
+			//write an empty long
+			faos.write(serializedGrammar);
+			//taos.closeArchiveEntry();
+/**
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ControlInformation ci = new ControlInformation();
 			ci.setType(ControlInfo.Type.DICTIONARY);
@@ -76,12 +96,17 @@ public class GRPWriter {
 			taos.putArchiveEntry(dictEntry);
 			taos.write(baos.toByteArray());
 			taos.closeArchiveEntry();
-			taos.close();
+			//taos.close();
+*/
+
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 
+	public void close() throws IOException {
+		faos.close();
+	}
 	
 	
 }

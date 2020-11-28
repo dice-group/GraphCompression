@@ -1,10 +1,8 @@
 package org.dice_group.grp.serialization.impl;
 
-import org.dice_group.grp.serialization.GraphDeserializer;
 import org.dice_group.grp.util.KD2Tree;
 import org.dice_group.grp.util.LabledMatrix;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

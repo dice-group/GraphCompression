@@ -1,16 +1,12 @@
 package org.dice_group.grp.fuseki;
 
-import org.apache.jena.graph.Graph;
-import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.graph.impl.GraphBase;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.dice_group.grp.util.LabledMatrix;
 import org.dice_group.grp.util.Point;
 import org.rdfhdt.hdt.dictionary.impl.PSFCFourSectionDictionary;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
-import org.rdfhdt.hdt.rdf.parsers.JenaNodeFormatter;
 import org.rdfhdt.hdt.triples.TripleID;
 import org.rdfhdt.hdtjena.NodeDictionary;
 
@@ -51,26 +47,26 @@ public class KD2Graph extends GraphBase {
         //p is variable
         if(ids.getPredicate()==0){
             for(Integer pID : predicateMap.keySet()){
-                getAllPointsForMatrix(it, pID.intValue(), ids.getSubject(), ids.getObject());
+                getAllPointsForMatrix(it, pID+1, Long.valueOf(ids.getSubject()).intValue(), Long.valueOf(ids.getObject()).intValue());
             }
         }
         else{
-            getAllPointsForMatrix(it, Long.valueOf(ids.getPredicate()).intValue(), ids.getSubject(), ids.getObject());
+            getAllPointsForMatrix(it, Long.valueOf(ids.getPredicate()).intValue(), Long.valueOf(ids.getSubject()).intValue(), Long.valueOf(ids.getObject()).intValue());
         }
         return it;
     }
 
-    public KD2JenaIterator getAllPointsForMatrix(KD2JenaIterator it, Integer propertyID, Long row, Long col){
+    public KD2JenaIterator getAllPointsForMatrix(KD2JenaIterator it, Integer propertyID, int row, int col){
         if(row!=0 && col!=0){
-            if(predicateMap.get(propertyID).get(row.intValue(), col.intValue())==1){
+            if(predicateMap.get(propertyID-1).get(row-1, col-1)==1){
                 it.add(new TripleID(row, propertyID, col));
                 return it;
             }
         }
         else {
-            for (Point p : predicateMap.get(propertyID).getPoints()) {
-                if ((col.intValue() == 0 || col.intValue() == p.getCol()) && (row.intValue() == 0 || row.intValue() == p.getRow())) {
-                    it.add(new TripleID(p.getRow(), propertyID, p.getCol()));
+            for (Point p : predicateMap.get(propertyID-1).getPoints()) {
+                if ((col == 0l || col == p.getCol()+1) && (row == 0l || row == p.getRow()+1)) {
+                    it.add(new TripleID(p.getRow()+1, propertyID, p.getCol()+1));
                 }
             }
         }
@@ -81,7 +77,7 @@ public class KD2Graph extends GraphBase {
         long subject=0, predicate=0, object=0;
 
         if(jenaTriple.getMatchSubject()!=null) {
-            subject = dict.getIntID(jenaTriple.getMatchSubject(), TripleComponentRole.OBJECT);
+            subject = dict.getIntID(jenaTriple.getMatchSubject(), TripleComponentRole.SUBJECT);
         }
 
         if(jenaTriple.getMatchPredicate()!=null) {

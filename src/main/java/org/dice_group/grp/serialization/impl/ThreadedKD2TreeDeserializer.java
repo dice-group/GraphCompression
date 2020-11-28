@@ -1,6 +1,5 @@
 package org.dice_group.grp.serialization.impl;
 
-import book.set.Hash;
 import org.dice_group.grp.util.KD2Tree;
 import org.dice_group.grp.util.LabledByteArray;
 import org.dice_group.grp.util.LabledMatrix;

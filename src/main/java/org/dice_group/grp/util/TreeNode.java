@@ -2,12 +2,11 @@ package org.dice_group.grp.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public class TreeNode {
 
-    private Byte[] value = new Byte[]{0,0,0,0};
+    private byte value = 0;
     private TreeNode[] children = new TreeNode[]{null,null,null,null};
     private TreeNode parent;
 
@@ -34,7 +33,8 @@ public class TreeNode {
 
     public TreeNode setChildIfAbsent(int i, TreeNode child){
         if(this.children[i]==null) {
-            value[i]=1;
+            value+=Math.pow(2, i);
+            //FIXME
             this.children[i] = child;
         }else{
             child=null;
@@ -47,12 +47,30 @@ public class TreeNode {
         return this.children[i];
     }
 
+    public Byte getRawValue(boolean reverse){
+        if(!reverse)
+            return value;
+        Byte ret=Integer.valueOf((value&8)/8).byteValue();
+        ret = Integer.valueOf(ret | (value&4)/2).byteValue() ;
+        ret = Integer.valueOf(ret | (value&2)*2).byteValue() ;
+        return Integer.valueOf(ret | (value&1)*8).byteValue() ;
+    }
+
     public Byte[] getValue() {
-        return value;
+        byte b0 = Integer.valueOf(value&1).byteValue();
+        byte b1 = Integer.valueOf((value&2)/2).byteValue();
+        byte b2 = Integer.valueOf((value&4)/4).byteValue();
+        byte b3 = Integer.valueOf((value&8)/8).byteValue();
+        Byte[] ret = new Byte[]{b0,b1, b2, b3};
+        return ret;
     }
 
     public void setValue(Byte[] value) {
-        this.value = value;
+        int j=1;
+        for(int i=0; i<value.length;i++){
+            this.value+=value[i]*j;
+            j*=2;
+        }
     }
 
     public List<List<Byte>> createPaths(){
@@ -64,17 +82,19 @@ public class TreeNode {
     private List<List<Byte>> createPathsRec(List<List<Byte>> cpaths){
         List<List<Byte>> paths = new ArrayList<List<Byte>>();
         List<List<Byte>> ret = new ArrayList<List<Byte>>();
+        byte j=1;
         for(Integer i=0;i<4;i++){
-            if(value[i]==1 && children[i]!=null) {
+            if((value&j)>=1 && children[i]!=null) {
                 for (List<Byte> cpath : cpaths) {
                     List<Byte> p = new ArrayList<Byte>(cpath);
                     p.add(i.byteValue());
                     paths.add(p);
                 }
+
                 //we have to add the return somewhere
                 ret.addAll(children[i].createPathsRec(paths));
             }
-
+            j*=2;
         }
         return ret;
     }
@@ -83,19 +103,21 @@ public class TreeNode {
     //TODO check if the problem occurs here
     public Collection<? extends List<Byte>> createUpwardsPath() {
         List<List<Byte>> paths = new ArrayList<List<Byte>>();
+        byte j=1;
         for(Integer i=0; i<4;i++) {
-            if(value[i]==1) {
+            if((value&j)>=1) {
 
                 List<Byte> path = new ArrayList<Byte>();
                 path.add(0, i.byteValue());
                 TreeNode cParent = this;
-                do{
+
+                while(cParent.getParent()!=null){
                     path.add(0, cParent.getParent().getIndex(cParent));
                     cParent=cParent.getParent();
-                }while(cParent.getParent()!=null);
+                }
                 paths.add(path);
             }
-
+            j*=2;
         }
         return paths;
     }
@@ -108,5 +130,11 @@ public class TreeNode {
         }
         return null;
 
+    }
+
+    public void clear() {
+        this.value=0;
+        this.children=null;
+        this.parent=null;
     }
 }

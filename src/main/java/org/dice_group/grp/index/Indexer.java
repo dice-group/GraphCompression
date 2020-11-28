@@ -2,8 +2,6 @@ package org.dice_group.grp.index;
 
 import grph.Grph;
 import org.apache.jena.graph.Node;
-import org.apache.jena.rdf.model.Model;
-import org.dice_group.grp.grammar.Grammar;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
 import org.rdfhdt.hdt.enums.TripleComponentRole;
 
@@ -28,8 +26,6 @@ public interface Indexer {
 	public Node getNodeFromID(int id, TripleComponentRole role);
 
 	public Node getNodeFromID(String s, TripleComponentRole role);
-
-	public Grammar indexGrammar(Grammar grammar);
 
 	public DictionaryPrivate getDict();
 	

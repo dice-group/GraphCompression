@@ -16,7 +16,7 @@ import org.rdfhdt.hdt.hdt.HDTVocabulary;
 import org.rdfhdt.hdt.options.HDTSpecification;
 
 import java.io.File;
-import java.nio.ByteBuffer;
+import java.io.FilenameFilter;
 import java.util.List;
 
 public class MultipleKD2GraphAssembler   extends AssemblerBase implements Assembler {
@@ -41,7 +41,15 @@ public class MultipleKD2GraphAssembler   extends AssemblerBase implements Assemb
         String folder = GraphUtils.getStringValue(root, ResourceFactory.createProperty("https://dice-research.org/fuseki/folder"));
         File dir = new File(folder);
         MultipleKD2Graph mgraph = new MultipleKD2Graph();
-        for (File file : dir.listFiles()) {
+        for (File file : dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File file, String s) {
+                if(s.endsWith(".dict")){
+                    return false;
+                }
+                return true;
+            }
+        })) {
             HDTSpecification spec = new HDTSpecification();
             spec.set("dictionary.type", HDTVocabulary.DICTIONARY_TYPE_FOUR_PSFC_SECTION);
 
@@ -49,18 +57,10 @@ public class MultipleKD2GraphAssembler   extends AssemblerBase implements Assemb
             try {
 
                 byte[] kd2ser = GRPReader.load(file.getAbsolutePath(), dict);
-                //read head
-                ByteBuffer bb = ByteBuffer.wrap(kd2ser);
-                byte[] startBytes = new byte[4];
-                bb.get(startBytes);
-                int startSize = ByteBuffer.wrap(startBytes).getInt();
-                //2. X bytes = start Graph
-                byte[] start = new byte[startSize];
-                bb = bb.slice();
-                bb.get(start);
+
 
                 KD2TreeDeserializer desr = new KD2TreeDeserializer();
-                List<LabledMatrix> matrices = desr.deserialize(start);
+                List<LabledMatrix> matrices = desr.deserialize(kd2ser);
                 System.out.println("Created " + matrices.size() + " matrices");
                 KD2Graph graph = new KD2Graph(matrices, dict);
                 mgraph.addGraph(graph);

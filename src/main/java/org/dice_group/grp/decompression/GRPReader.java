@@ -1,41 +1,49 @@
 package org.dice_group.grp.decompression;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.dice_group.grp.compression.GRPWriter;
-import org.dice_group.grp.decompression.impl.CRSDecompressor;
 import org.dice_group.grp.exceptions.NotSupportedException;
-import org.dice_group.grp.grammar.Grammar;
-import org.dice_group.grp.grammar.digram.Digram;
-import org.rdfhdt.hdt.dictionary.DictionaryFactory;
 import org.rdfhdt.hdt.dictionary.DictionaryPrivate;
-import org.rdfhdt.hdt.dictionary.TempDictionary;
-import org.rdfhdt.hdt.dictionary.impl.PSFCFourSectionDictionary;
-import org.rdfhdt.hdt.hdt.HDTVocabulary;
 import org.rdfhdt.hdt.listener.ProgressOut;
 import org.rdfhdt.hdt.options.ControlInfo;
 import org.rdfhdt.hdt.options.ControlInformation;
-import org.rdfhdt.hdt.options.HDTSpecification;
-import org.rdfhdt.hdt.util.io.CountInputStream;
-import org.rdfhdt.hdtjena.NodeDictionary;
+
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 public class GRPReader {
 
 	public static byte[] load(String input, DictionaryPrivate dict)
 			throws NotSupportedException, IOException {
+		try (FileInputStream fos = new FileInputStream(input);FileInputStream fosDict = new FileInputStream(input+".dict");){
+			ControlInformation ci = new ControlInformation();
+			ci.setType(ControlInfo.Type.DICTIONARY);
+			BufferedInputStream bis=null;
+			try {
+				bis = new BufferedInputStream(fosDict);
+				ci.load(bis);
+				dict.load(bis, ci, new ProgressOut());
+			}catch (Exception e){
+				e.printStackTrace();
+			}
 
+			try {
+				bis = new BufferedInputStream(fos);
+				return bis.readAllBytes();
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+		return null;
+
+
+		/*
 		try (FileInputStream fos = new FileInputStream(input);
 				//GzipCompressorInputStream gzip = new GzipCompressorInputStream(fos);
-				TarArchiveInputStream tais = new TarArchiveInputStream(fos);) {
+				TarArchiveInputStream tais = new TarArchiveInputStream(fos);
+				) {
 			ArchiveEntry entry = tais.getNextEntry();
 
 			byte[] grammarArr = new byte[0];
@@ -46,10 +54,14 @@ public class GRPReader {
 			if (entry.getName().equals(GRPWriter.GRAMMAR_ENTRY_NAME)) {
 				grammarArr = tais.readAllBytes();
 			}
+			BufferedInputStream bis=null;
 			if (entry.getName().equals(GRPWriter.DICTIONARY_ENTRY_NAME)) {
-				try (BufferedInputStream bis = new BufferedInputStream(tais)) {
+				try {
+					bis = new BufferedInputStream(tais);
 					ci.load(bis);
 					dict.load(bis, ci, new ProgressOut());
+				}catch (Exception e){
+					e.printStackTrace();
 				}
 			}
 			entry = tais.getNextTarEntry();
@@ -57,15 +69,23 @@ public class GRPReader {
 				grammarArr = tais.readAllBytes();
 			}
 			if (entry.getName().equals(GRPWriter.DICTIONARY_ENTRY_NAME)) {
-				try (BufferedInputStream bis = new BufferedInputStream(tais)) {
+				try {
+					bis = new BufferedInputStream(tais);
 					ci.load(bis);
 					dict.load(bis, ci, new ProgressOut());
+				}catch (Exception e){
+					e.printStackTrace();
 				}
+			}
+			if(bis!=null){
+				bis.close();
 			}
 			return grammarArr;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return null;
+
+		 */
 	}
 }

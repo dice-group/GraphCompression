@@ -3,27 +3,27 @@ package org.dice_group.grp.util;
 public class Point {
 
 
-    private int row;
-    private int col;
+    private Integer row;
+    private Integer col;
 
-    public Point(int row, int col){
+    public Point(Integer row, Integer col){
         this.row=row;
         this.col=col;
     }
 
-    public int getRow() {
+    public Integer getRow() {
         return row;
     }
 
-    public void setRow(int row) {
+    public void setRow(Integer row) {
         this.row = row;
     }
 
-    public int getCol() {
+    public Integer getCol() {
         return col;
     }
 
-    public void setCol(int col) {
+    public void setCol(Integer col) {
         this.col = col;
     }
 

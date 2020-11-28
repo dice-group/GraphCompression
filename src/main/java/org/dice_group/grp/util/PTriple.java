@@ -1,19 +1,14 @@
 package org.dice_group.grp.util;
 
-import org.apache.jena.graph.Node;
-import org.apache.jena.graph.Triple;
-
 public class PTriple  implements Comparable<PTriple> {
 
 
-    private final String subject;
+    private  String subject;
+    private  Integer predicate;
+    private  String object;
 
 
-
-    private final String predicate;
-    private final String object;
-
-    public PTriple(String s, String p, String o) {
+    public PTriple(String s, Integer p, String o) {
         this.predicate = p;
         this.subject = s;
         this.object=o;
@@ -23,7 +18,7 @@ public class PTriple  implements Comparable<PTriple> {
         return subject;
     }
 
-    public String getPredicate() {
+    public Integer getPredicate() {
         return predicate;
     }
 
@@ -43,5 +38,11 @@ public class PTriple  implements Comparable<PTriple> {
             return sc;
         }
         return getObject().toString().compareTo(other.getObject().toString());
+    }
+
+    public void clear() {
+        this.object=null;
+        this.subject=null;
+        this.predicate=null;
     }
 }

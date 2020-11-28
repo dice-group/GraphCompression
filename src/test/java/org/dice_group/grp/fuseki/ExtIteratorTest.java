@@ -7,7 +7,6 @@ import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.dice_group.grp.exceptions.NotAllowedInRDFException;
@@ -67,8 +66,8 @@ public class ExtIteratorTest {
         File dir = new File("src/test/resources/fuseki/");
         dir.mkdir();
         ExtKD2JenaIterator it = new ExtKD2JenaIterator();
-        Main.compress("src/test/resources/matrix.nt", "src/test/resources/fuseki/matrix.kd2", true, true, true);
-        Main.compress("src/test/resources/bn.nt", "src/test/resources/fuseki/bn.kd2", true, true, true);
+        Main.compress("src/test/resources/matrix.nt", "src/test/resources/fuseki/matrix.kd2", true, false);
+        Main.compress("src/test/resources/bn.nt", "src/test/resources/fuseki/bn.kd2", true, false);
         MultipleKD2GraphAssembler assembler = new MultipleKD2GraphAssembler();
         Model meta = ModelFactory.createDefaultModel();
         RDFDataMgr.read(meta, new FileInputStream("src/test/resources/multifilesexa.ttl"), Lang.TURTLE);

@@ -18,37 +18,32 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class CompressionParametersTest {
 
-    private boolean c1=true;
-    private boolean c2=true;
-    private boolean c3=true;
-    private boolean c4=true;
+    private boolean c1;
+
 
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
-                {true, true, true, true}, {true, false, true, true}, {true, true, false, true},
-                {true, false, false, true}, {true, true, true, false}, {true, false, true, false},
-                {true, true, false, false}, {true, false, false, false}
+                {true}, {false}
         });
     }
 
-    public CompressionParametersTest(boolean c1, boolean c2, boolean c3, boolean c4){
+    public CompressionParametersTest(boolean c1){
         this.c1=c1;
-        this.c2=c2;
-        this.c3=c3;
-        this.c4=c4;
+
     }
 
     @Test
     public void testPD() throws InterruptedException, NotAllowedInRDFException, NotSupportedException, ExecutionException, IOException {
             //mainly weird digrams and combination of digrams
-            Main.compress("src/test/resources/persondata_en.ttl", "src/test/resources/persondata_en.ttl.grp", c1, c2, c3);
-            Main.decompress("src/test/resources/persondata_en.ttl.grp", "src/test/resources/persondata_en.ttl.grp.nt", c1,  c4, "N-TRIPLE");
+            Main.compress("src/test/resources/persondata_en.ttl", "src/test/resources/persondata_en.ttl.grp", c1, false);
+            Main.decompress("src/test/resources/persondata_en.ttl.grp", "src/test/resources/persondata_en.ttl.grp.nt", c1, "N-TRIPLE");
 
             checkEqual("src/test/resources/persondata_en.ttl", "src/test/resources/persondata_en.ttl.grp.nt");
 
@@ -59,8 +54,8 @@ public class CompressionParametersTest {
     @Test
     public void testGO() throws InterruptedException, NotAllowedInRDFException, NotSupportedException, ExecutionException, IOException {
             // mainly literals and datatypes testing
-            Main.compress("src/test/resources/geo_coordinates_en.ttl", "src/test/resources/geo_coordinates_en.ttl.grp", c1, c2, c3);
-            Main.decompress("src/test/resources/geo_coordinates_en.ttl.grp", "src/test/resources/geo_coordinates_en.ttl.grp.ttl", c1, c4, "TURTLE");
+            Main.compress("src/test/resources/geo_coordinates_en.ttl", "src/test/resources/geo_coordinates_en.ttl.grp", c1, false);
+            Main.decompress("src/test/resources/geo_coordinates_en.ttl.grp", "src/test/resources/geo_coordinates_en.ttl.grp.ttl", c1, "TURTLE");
 
             checkEqual("src/test/resources/geo_coordinates_en.ttl", "src/test/resources/geo_coordinates_en.ttl.grp.ttl");
 
@@ -72,8 +67,8 @@ public class CompressionParametersTest {
     @Test
     public void testBN() throws InterruptedException, NotAllowedInRDFException, NotSupportedException, ExecutionException, IOException {
         //blank node test
-        Main.compress("src/test/resources/bn.nt", "src/test/resources/bn.grp", c1, c2, c3);
-        Main.decompress("src/test/resources/bn.grp", "src/test/resources/bn.grp.ttl", c1, c4, "TURTLE");
+        Main.compress("src/test/resources/bn.nt", "src/test/resources/bn.grp", c1, false);
+        Main.decompress("src/test/resources/bn.grp", "src/test/resources/bn.grp.ttl", c1, "TURTLE");
 
         checkEqual("src/test/resources/bn.nt", "src/test/resources/bn.grp.ttl");
 
@@ -90,31 +85,72 @@ public class CompressionParametersTest {
         Model m2 = ModelFactory.createDefaultModel();
         m2.read(new FileReader(actualFile), null, "TTL");
         //assertTrue(m1.isIsomorphicWith(m2));
+
         List<Statement> expected = m1.listStatements().toList();
         Collections.sort(expected, new Comparator<Statement>() {
             @Override
             public int compare(Statement st1, Statement st2) {
                 int sC = st1.getSubject().toString().compareTo(st2.getSubject().toString());
+                if(st1.getSubject().isAnon()){
+                    sC= -1;
+                    if(st2.getSubject().isAnon()){
+                        sC=0;
+                    }
+                }
                 if(sC!=0){return sC;}
                 int pC = st1.getPredicate().toString().compareTo(st2.getPredicate().toString());
                 if(pC!=0){return pC;}
+                if(st1.getObject().isAnon()){
+                    int oC = -1;
+                    if(st2.getSubject().isAnon()){
+                        oC=0;
+                    }
+                    return oC;
+                }
                 return st1.getObject().toString().compareTo(st2.getObject().toString());
             }
         });
 
-        List<Statement> actual = m1.listStatements().toList();
+        List<Statement> actual = m2.listStatements().toList();
         Collections.sort(actual, new Comparator<Statement>() {
             @Override
             public int compare(Statement st1, Statement st2) {
                 int sC = st1.getSubject().toString().compareTo(st2.getSubject().toString());
+                if(st1.getSubject().isAnon()){
+                    sC= -1;
+                    if(st2.getSubject().isAnon()){
+                        sC=0;
+                    }
+                }
                 if(sC!=0){return sC;}
                 int pC = st1.getPredicate().toString().compareTo(st2.getPredicate().toString());
                 if(pC!=0){return pC;}
+                if(st1.getObject().isAnon()){
+                    int oC = -1;
+                    if(st2.getSubject().isAnon()){
+                        oC=0;
+                    }
+                    return oC;
+                }
                 return st1.getObject().toString().compareTo(st2.getObject().toString());
             }
         });
         for(int i=0;i<expected.size();i++){
-            assertEquals(expected.get(i), actual.get(i));
+            Statement stmtExp = expected.get(i);
+            Statement stmtAct = actual.get(i);
+            if(stmtExp.getSubject().isAnon()){
+                assertTrue(stmtAct.getSubject().isAnon());
+            }
+            else{
+                assertEquals(stmtExp.getSubject(), stmtAct.getSubject());
+            }
+            if(stmtExp.getObject().isAnon()){
+                assertTrue(stmtAct.getObject().isAnon());
+            }
+            else{
+                assertEquals(stmtExp.getObject(), stmtAct.getObject());
+            }
+            assertEquals(stmtExp.getPredicate(), stmtAct.getPredicate());
         }
     }
 

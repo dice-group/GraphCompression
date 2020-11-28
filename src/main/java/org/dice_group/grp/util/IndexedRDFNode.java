@@ -1,9 +1,5 @@
 package org.dice_group.grp.util;
 
-import org.apache.jena.graph.Node;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.tdb.index.Index;
-
 public class IndexedRDFNode {
 
     private int lowerBound=0;

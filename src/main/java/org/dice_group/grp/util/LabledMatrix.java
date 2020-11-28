@@ -1,17 +1,16 @@
 package org.dice_group.grp.util;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
 
 public class LabledMatrix {
 
 
 
     private Integer labelId=0;
-    private Set<Point> matrix = new HashSet<Point>();
+    private Collection<Point> matrix = new ArrayList<>();
 
+    public int max=-1;
 
     public LabledMatrix(){
     }
@@ -24,11 +23,17 @@ public class LabledMatrix {
     public Integer getLabelId() {
         return labelId;
     }
-    public void set(int row, int col){
+    public void set(Integer row, Integer col){
         matrix.add(new Point(row, col));
+        if(row>max){
+            max=row;
+        }
+        if(col>max){
+            max=col;
+        }
     }
 
-    public int get(int row, int col){
+    public int get(Integer row, Integer col){
         if(matrix.contains(new Point(row, col))){
             return 1;
         }
@@ -36,11 +41,23 @@ public class LabledMatrix {
     }
 
 
-    public Set<Point> getPoints(){
+    public Collection<Point> getPoints(){
         return matrix;
     }
 
     public Integer getSize() {
         return matrix.size();
+    }
+
+    public long getMaxVal() {
+        return max;
+    }
+
+    public double getH(){
+        return Math.ceil(log(max+1, 2));
+    }
+
+    private double log(int x, int base) {
+        return  (Math.log(x) / Math.log(base));
     }
 }

@@ -1,11 +1,15 @@
 package org.dice_group.grp.util;
 
 import grph.Grph;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.StmtIterator;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.NumberFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 
 public class Stats {
@@ -57,11 +61,19 @@ public class Stats {
 
         NumberFormat format = NumberFormat.getInstance();
 
-        StringBuilder sb = new StringBuilder();
+        Instant now = Instant.now();
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofLocalizedDateTime( FormatStyle.MEDIUM )
+                        .withLocale( Locale.UK )
+                        .withZone( ZoneId.systemDefault() );
+        String output = formatter.format( now );
+
+        StringBuilder sb = new StringBuilder(output).append(": ");
         long maxMemory = runtime.maxMemory();
         long allocatedMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
 
+        sb.append("actual used memory: " + format.format((allocatedMemory-freeMemory) / 1024) + ", ");
         sb.append("free memory: " + format.format(freeMemory / 1024) + ", ");
         sb.append("allocated memory: " + format.format(allocatedMemory / 1024) + ", ");
         sb.append("max memory: " + format.format(maxMemory / 1024) + ", ");

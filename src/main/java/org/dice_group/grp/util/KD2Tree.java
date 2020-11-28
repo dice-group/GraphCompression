@@ -1,13 +1,12 @@
 package org.dice_group.grp.util;
 
-import org.apache.jena.ext.com.google.common.collect.Lists;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+//TODO work directly on ser
 public class KD2Tree {
 
    private List<Byte> tree = new ArrayList<Byte>();
@@ -214,7 +213,7 @@ public class KD2Tree {
         baos = new ByteArrayOutputStream();
 
         //baos.writeBytes(ByteBuffer.allocate(Integer.BYTES).putInt(ser.length).array());
-        baos.write(ByteBuffer.allocate(Integer.BYTES).putInt(labelId).array());
+        baos.write(ByteBuffer.allocate(Integer.BYTES).putInt(labelId.intValue()).array());
         baos.write(ser);
         baos.write(0);
         return baos.toByteArray();
@@ -263,5 +262,7 @@ public class KD2Tree {
     }
 
 
-
+    public void clear() {
+        tree.clear();
+    }
 }

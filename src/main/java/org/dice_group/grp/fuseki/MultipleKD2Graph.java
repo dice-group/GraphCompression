@@ -3,7 +3,6 @@ package org.dice_group.grp.fuseki;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.graph.impl.GraphBase;
 import org.apache.jena.util.iterator.ExtendedIterator;
-import org.rdfhdt.hdt.triples.TripleID;
 
 import java.util.ArrayList;
 import java.util.List;
