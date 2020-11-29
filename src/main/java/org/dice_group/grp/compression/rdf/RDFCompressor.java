@@ -133,7 +133,10 @@ public class RDFCompressor {
 		RDFNotation notation = RDFNotation.guess(rdfFile);
 		RDFParserCallback parser = RDFParserFactory.getParserCallback(notation);
 		AtomicReference<Integer> count= new AtomicReference<>(0);
-		//get namespaces -> prefix mapping  (trade off, time - mem)
+		// mapping to assure that the same bNodes are getting the same internal id later on too.
+		//FIXME better way to assure that the same bNode is getting the same id here, as well as in indexing
+		// we can assume the same order here and in indexing, but not the same bnode id
+		// also we want a O(1) lookup to get the internal id
 		Map<Integer, Integer> bNodes = new HashMap<Integer, Integer>();
 
 		try {
@@ -166,7 +169,7 @@ public class RDFCompressor {
 				indexNode(object, TripleComponentRole.OBJECT);
 				count.getAndSet(count.get() + 1);
 				if(count.get() %10000000==0){
-					System.out.print("\rLoaded "+count+" triples. ");
+					System.out.print("\rLoaded "+count+" triples. ( "+BlankNodeIDGenerator.getCurrent()+" blanks");
 				}
 			});
 		} catch (ParserException e) {

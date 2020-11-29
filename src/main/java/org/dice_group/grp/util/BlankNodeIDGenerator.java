@@ -25,4 +25,8 @@ public class BlankNodeIDGenerator {
         }
         return ret;
     }
+
+    public static int getCurrent() {
+        return id;
+    }
 }

@@ -85,6 +85,7 @@ public class IntBasedIndexer {
                     }
                 }
 
+                //this takes long
                 int subjectID = Long.valueOf(dict.stringToId(subject, TripleComponentRole.SUBJECT)).intValue()-1;
                 int predicateID = Long.valueOf(dict.stringToId(predicate, TripleComponentRole.PREDICATE)).intValue()-1;
                 int objectID = Long.valueOf(dict.stringToId(object, TripleComponentRole.OBJECT)).intValue()-1;
