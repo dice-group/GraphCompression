@@ -34,7 +34,6 @@ public class TreeNode {
     public TreeNode setChildIfAbsent(int i, TreeNode child){
         if(this.children[i]==null) {
             value+=Math.pow(2, i);
-            //FIXME
             this.children[i] = child;
         }else{
             child=null;

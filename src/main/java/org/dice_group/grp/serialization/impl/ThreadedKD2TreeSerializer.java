@@ -102,6 +102,8 @@ public class ThreadedKD2TreeSerializer {
         //Double size = actSize;
         Double h = matrix.getH();
         Double size = Math.pow(2, h);
+
+
         for(Point p : matrix.getPoints()){
             //get path
             int c1=0 ;
@@ -117,6 +119,7 @@ public class ThreadedKD2TreeSerializer {
 
             for(int i=0;i<h;i++){
                 Byte node = getNode(p, c1, r1, c2, r2);
+
                 TreeNode cnode = new TreeNode();
 
                 cnode = pnode.setChildIfAbsent(node, cnode);
@@ -152,6 +155,7 @@ public class ThreadedKD2TreeSerializer {
             hMap.add(new ArrayList<Byte>());
         }
         merge(root, hMap, 0, h);
+        //mergeIterative(root, hMap, h);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         for(byte b : ByteBuffer.allocate(Integer.BYTES).putInt(matrix.getLabelId()).array()) {
             baos.write(b);
@@ -181,7 +185,39 @@ public class ThreadedKD2TreeSerializer {
         return baos.toByteArray();
     }
 
+    private int countToIndex(List<Byte> current, int index, byte node){
+        int count=0;
+        if(current.isEmpty()){
+            return 0;
+        }
+        for(int i=0;i<index-1;i++){
+            byte b = current.get(i);
+            count+=(b & 1)==1?1:0;
+            count+=(b & 2)==1?1:0;
+            count+=(b & 4)==1?1:0;
+            count+=(b & 8)==1?1:0;
+        }
+        byte b = current.get(current.size()-1);
+        if((node&8) ==1){
+            return count;
+        }
+        else if((node & 4) == 1){
+            count+=(b & 8)==1?1:0;
+            return count;
+        }
+        else if((node & 2) == 1){
+            count+=(b & 8)==1?1:0;
+            count+=(b & 4)==1?1:0;
+            return count;
+        }
+        count+=(b & 8)==1?1:0;
+        count+=(b & 4)==1?1:0;
+        count+=(b & 2)==1?1:0;
+        return count;
+    }
+
     private void merge(TreeNode root, List<List<Byte>> hMap, int h, double max) {
+        //possible not to do this recursively?
         if(root==null || h>=max){
             return;
         }
@@ -207,6 +243,46 @@ public class ThreadedKD2TreeSerializer {
         merge(c3, hMap, h+1, max);
 
     }
+
+    private void mergeIterative(TreeNode root, List<List<Byte>> hMap,double h) {
+        //possible not to do this recursively?
+        List<Byte> arr = hMap.get(0);
+        arr.add(root.getRawValue(true));
+
+        List<TreeNode> childs = new ArrayList<TreeNode>();
+        for(TreeNode ch : root.getChildren()){
+            if(ch!=null){
+                childs.add(ch);
+            }
+        }
+        root.clear();
+
+        //for all hierarchy elements
+        for(int i=1; i<h;i++){
+            //get correct mao
+            arr = hMap.get(i);
+            //set amount of nodes in h
+            int size =childs.size();
+            //for each of these nodes
+            for(int c=0;c<size;c++){
+                //get node
+                TreeNode current = childs.remove(0);
+                //add value
+                arr.add(current.getRawValue(true));
+                //add children to queue
+                for(TreeNode child : current.getChildren()){
+                    if(child!=null) {
+                        childs.add(child);
+                    }
+
+                }
+                //clear child
+                current.clear();
+            }
+
+        }
+    }
+
 
     public Byte getNode(Point p, int c1, int r1, int c2, int r2){
         int rCenter = (r2 - r1) / 2 + r1;
