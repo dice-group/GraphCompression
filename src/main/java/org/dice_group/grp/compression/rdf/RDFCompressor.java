@@ -137,29 +137,29 @@ public class RDFCompressor {
 		//FIXME better way to assure that the same bNode is getting the same id here, as well as in indexing
 		// we can assume the same order here and in indexing, but not the same bnode id
 		// also we want a O(1) lookup to get the internal id
-		Map<Integer, Integer> bNodes = new HashMap<Integer, Integer>();
+		Map<String, Integer> bNodes = new HashMap<String, Integer>();
 
 		try {
 			parser.doParse(rdfFile.getAbsolutePath(), "", notation, (triple, l) -> {
 
 				String subject = triple.getSubject().toString();
 				if(subject.startsWith("_:")){
-					if(bNodes.containsKey(subject.hashCode())){
-						subject = "_:"+bNodes.get(subject.hashCode());
+					if(bNodes.containsKey(subject)){
+						subject = "_:"+bNodes.get(subject);
 					}else {
 						int id = BlankNodeIDGenerator.getNextID();
-						bNodes.put(subject.hashCode(), id);
+						bNodes.put(subject, id);
 						subject = "_:" + id;
 					}
 				}
 				String predicate = triple.getPredicate().toString();
 				String object = triple.getObject().toString();
 				if(object.startsWith("_:")){
-					if(bNodes.containsKey(object.hashCode())){
-						object = "_:"+bNodes.get(object.hashCode());
+					if(bNodes.containsKey(object)){
+						object = "_:"+bNodes.get(object);
 					}else {
 						int id = BlankNodeIDGenerator.getNextID();
-						bNodes.put(object.hashCode(), id);
+						bNodes.put(object, id);
 						object = "_:" + id;
 					}
 				}
@@ -169,7 +169,7 @@ public class RDFCompressor {
 				indexNode(object, TripleComponentRole.OBJECT);
 				count.getAndSet(count.get() + 1);
 				if(count.get() %10000000==0){
-					System.out.print("\rLoaded "+count+" triples. ( "+BlankNodeIDGenerator.getCurrent()+" blanks");
+					System.out.print("\rLoaded "+count+" triples. ( "+BlankNodeIDGenerator.getCurrent()+" blanks ) ");
 				}
 			});
 		} catch (ParserException e) {

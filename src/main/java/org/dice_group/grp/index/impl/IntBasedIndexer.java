@@ -56,8 +56,8 @@ public class IntBasedIndexer {
         AtomicReference<Integer> count= new AtomicReference<>(0);
         AtomicInteger bnodeCount= new AtomicInteger(0);
 
-        Map<Integer, Integer> bNodes = new HashMap<Integer, Integer>();
-
+        Map<String, Integer> bNodes = new HashMap<String, Integer>();
+        long start = Calendar.getInstance().getTimeInMillis();
         //get namespaces -> prefix mapping  (trade off, time - mem)
         try {
             parser.doParse(rdfFile.getAbsolutePath(), "", notation, (triple, l) -> {
@@ -67,34 +67,34 @@ public class IntBasedIndexer {
                 String object = triple.getObject().toString();
 
                 if(subject.startsWith("_:")){
-                    if(bNodes.containsKey(subject.hashCode())){
-                        subject = "_:"+bNodes.get(subject.hashCode());
+                    if(bNodes.containsKey(subject)){
+                        subject = "_:"+bNodes.get(subject);
                     }else {
                         int id = BlankNodeIDGenerator.getNextID();
-                        bNodes.put(subject.hashCode(), id);
+                        bNodes.put(subject, id);
                         subject = "_:" + id;
                     }
                 }
                 if(object.startsWith("_:")){
-                    if(bNodes.containsKey(object.hashCode())){
-                        object = "_:"+bNodes.get(object.hashCode());
+                    if(bNodes.containsKey(object)){
+                        object = "_:"+bNodes.get(object);
                     }else {
                         int id = BlankNodeIDGenerator.getNextID();
-                        bNodes.put(object.hashCode(), id);
+                        bNodes.put(object, id);
                         object = "_:" + id;
                     }
                 }
 
-                //this takes long
-                int subjectID = Long.valueOf(dict.stringToId(subject, TripleComponentRole.SUBJECT)).intValue()-1;
-                int predicateID = Long.valueOf(dict.stringToId(predicate, TripleComponentRole.PREDICATE)).intValue()-1;
-                int objectID = Long.valueOf(dict.stringToId(object, TripleComponentRole.OBJECT)).intValue()-1;
+                int subjectID = Long.valueOf(tmpDict.stringToId(subject, TripleComponentRole.SUBJECT)).intValue()-1;
+                int predicateID = Long.valueOf(tmpDict.stringToId(predicate, TripleComponentRole.PREDICATE)).intValue()-1;
+                int objectID = Long.valueOf(tmpDict.stringToId(object, TripleComponentRole.OBJECT)).intValue()-1;
 
                 serializer.addTriple(subjectID, predicateID, objectID);
 
                 count.getAndSet(count.get() + 1);
                 if(count.get() %10000000==0){
-                    System.out.print("\rIndexed "+count+" triples. ");
+                    long end = Calendar.getInstance().getTimeInMillis();
+                    System.out.print("\rIndexed "+count+" triples. ["+((end-start)*1.0/count.get())+"ms/triple avg]");
                 }
             });
         } catch (ParserException e) {
