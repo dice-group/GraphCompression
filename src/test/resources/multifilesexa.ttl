@@ -7,7 +7,7 @@
 @prefix ja:      <http://jena.hpl.hp.com/2005/11/Assembler#> .
 
 [] rdf:type fuseki:Server ;
-   ja:loadClass "org.dice_group.grp.fuseki.MultipleKD2GraphAssembler" ;
+   ja:loadClass "org.dice_group.k2.fuseki.MultipleKD2GraphAssembler" ;
 	
    fuseki:services (
      <#service1>
