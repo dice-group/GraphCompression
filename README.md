@@ -35,12 +35,12 @@ and
 
 Compression using KD2 Trees
 ```bash
-rdfrepair -c -tkd2 IN_FILE.ttl OUT_FILE.k2
+./rdf2k2 -c -tkd2 IN_FILE.ttl OUT_FILE.k2
 ```
 
 Decompression using TURTLE format (N-TRIPLE, RDF/XML or TURTLE is possible)
 ```bash
-rdfrepair -d -out TURTLE -tkd2 IN_FILE.k2 OUT_FILE.ttl
+./rdf2k2 -d -out TURTLE -tkd2 IN_FILE.k2 OUT_FILE.ttl
 ```
 
 To adjust the RAM usage to 4GB use the following:
