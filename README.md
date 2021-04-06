@@ -60,7 +60,7 @@ wget https://github.com/dice-group/GraphCompression/releases/download/v1.0.0-k2/
 tar -xzvf fuseki-k2.tar.gz
 cd apache-jena-fuseki-3.13.1/
 cp YOUR_KD2_COMPRESSED_FILE file.k2
-./fuseki-server --config=kd2_example.ttl
+./fuseki-server --config=k2_example.ttl
 ```
 
 

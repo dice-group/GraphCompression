@@ -12,6 +12,13 @@ import java.util.List;
 
 public class KD2TreeDeserializer {
 
+    public int addOffset=4;
+
+    public int readLabelId(byte[] id){
+        int labelId = ByteBuffer.wrap(id).getInt();
+        return labelId;
+    }
+
     public List<LabledMatrix>  deserialize(byte[] serialized) throws IOException {
         List<LabledMatrix> matrices = new ArrayList<LabledMatrix>();
 
@@ -20,15 +27,13 @@ public class KD2TreeDeserializer {
         //        baos.write(ser);
         //ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
         int offset = 0;
-        long avgM=0;
-        long avgKd=0;
         System.out.println("starting deserializing kd2trees and build matrices");
         int count=0;
         for(int i=0;i<serialized.length;) {
-            byte[] id = Arrays.copyOfRange(serialized, offset, offset+4);
-            int labelId = ByteBuffer.wrap(id).getInt();
-            i+=4;
-            offset+=4;
+            byte[] id = Arrays.copyOfRange(serialized, offset, offset+addOffset);
+            int labelId=readLabelId(id);
+            i+=addOffset;
+            offset+=addOffset;
             int size=0;
             //List<Byte> ser = new ArrayList<Byte>();
             for(int j=offset;j<serialized.length;j++) {
@@ -47,14 +52,8 @@ public class KD2TreeDeserializer {
             //System.out.println(ser[ser.length-1]);
 
             //bais.read(ser, offset, size);
-            long s = Calendar.getInstance().getTimeInMillis();
-            KD2Tree tree = KD2Tree.deserialize(labelId, ser);
-            long e = Calendar.getInstance().getTimeInMillis();
-            avgKd+=e-s;
-            s = Calendar.getInstance().getTimeInMillis();
-            LabledMatrix matrix = tree.createMatrix();
-            e = Calendar.getInstance().getTimeInMillis();
-            avgM+=e-s;
+            LabledMatrix matrix = getMatrix(labelId, ser);
+
             matrices.add(matrix);
             offset+=size+1;
 //            offset++;
@@ -62,11 +61,18 @@ public class KD2TreeDeserializer {
             count++;
             if(count%10 ==0) {
                 System.out.println("Created "+count+" kd trees/matrices");
-                System.out.println("Matrices took avg "+avgM*1.0/count+"ms");
-                System.out.println("Trees took avg "+avgKd*1.0/count+"ms");
             }
         }
         System.out.println("Finished creating "+count+" kd trees/matrices");
         return matrices;
+    }
+
+    protected LabledMatrix getMatrix(int labelId, byte[] ser) throws IOException {
+        KD2Tree tree = deserialize(labelId, ser);
+        return tree.createMatrix();
+    }
+
+    protected KD2Tree deserialize(int labelId, byte[] ser) throws IOException {
+        return KD2Tree.deserialize(labelId, ser);
     }
 }

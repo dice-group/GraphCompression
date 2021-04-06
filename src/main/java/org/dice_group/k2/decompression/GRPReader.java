@@ -17,10 +17,13 @@ public class GRPReader {
 		try (FileInputStream fos = new FileInputStream(input);FileInputStream fosDict = new FileInputStream(input+".dict");){
 			ControlInformation ci = new ControlInformation();
 			ci.setType(ControlInfo.Type.DICTIONARY);
+
 			BufferedInputStream bis=null;
 			try {
 				bis = new BufferedInputStream(fosDict);
 				ci.load(bis);
+				ci.setType(ControlInfo.Type.DICTIONARY);
+
 				dict.load(bis, ci, new ProgressOut());
 			}catch (Exception e){
 				e.printStackTrace();

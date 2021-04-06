@@ -2,6 +2,7 @@ package org.dice_group.k2.compression.impl;
 
 import org.dice_group.k2.compression.AbstractGrammarCompressor;
 import org.dice_group.k2.exceptions.NotSupportedException;
+import org.dice_group.k2.serialization.impl.ThreadedKD2PPSerializer;
 import org.dice_group.k2.serialization.impl.ThreadedKD2TreeSerializer;
 
 import java.io.FileOutputStream;
@@ -22,10 +23,10 @@ public class KD2TreeCompressor extends AbstractGrammarCompressor {
         this.threaded = threaded;
         if(threaded) {
             int cores = Runtime.getRuntime().availableProcessors();
-            serializer = new ThreadedKD2TreeSerializer(cores, predicates);
+            serializer = new ThreadedKD2PPSerializer(cores, predicates);
         }
         else{
-            serializer = new ThreadedKD2TreeSerializer(1, predicates);
+            serializer = new ThreadedKD2PPSerializer(1, predicates);
         }
     }
 

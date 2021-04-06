@@ -136,4 +136,8 @@ public class TreeNode {
         this.children=null;
         this.parent=null;
     }
+
+    public boolean isLeaf() {
+        return value==0;
+    }
 }

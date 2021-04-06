@@ -118,7 +118,7 @@ public class ThreadedKD2TreeSerializer {
         return trees;
     }
 
-    private byte[] createTree(LabledMatrix matrix, Double actSize, Double actH){
+    protected byte[] createTree(LabledMatrix matrix, Double actSize, Double actH){
         TreeNode root = new TreeNode();
         int c=0;
         int mSize= matrix.getPoints().size();
@@ -175,16 +175,25 @@ public class ThreadedKD2TreeSerializer {
         }
         matrix.getPoints().clear();
 
+        //TODO use Mutex
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        writeToBaos(baos, root, h, matrix.getLabelId());
+        //TODO write directly
+        return baos.toByteArray();
+    }
+
+    public void writeToBaos(ByteArrayOutputStream baos, TreeNode root, Double h, Integer labelID){
+        for(byte b : ByteBuffer.allocate(Integer.BYTES).putInt(labelID).array()) {
+            baos.write(b);
+        }
         List<List<Byte>> hMap = new ArrayList<List<Byte>>();
         for(int i=0;i<h;i++){
             hMap.add(new ArrayList<Byte>());
         }
         merge(root, hMap, 0, h);
         //mergeIterative(root, hMap, h);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for(byte b : ByteBuffer.allocate(Integer.BYTES).putInt(matrix.getLabelId()).array()) {
-            baos.write(b);
-        }
+
 
         boolean shift=true;
         byte last=0;
@@ -207,7 +216,6 @@ public class ThreadedKD2TreeSerializer {
         }
         baos.write(0);
         hMap.clear();
-        return baos.toByteArray();
     }
 
     private int countToIndex(List<Byte> current, int index, byte node){

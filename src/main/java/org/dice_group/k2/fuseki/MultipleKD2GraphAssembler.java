@@ -9,6 +9,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.sparql.util.graph.GraphUtils;
 import org.dice_group.k2.decompression.GRPReader;
+import org.dice_group.k2.serialization.impl.KD2PPDeserializer;
 import org.dice_group.k2.serialization.impl.KD2TreeDeserializer;
 import org.dice_group.k2.util.LabledMatrix;
 import org.rdfhdt.hdt.dictionary.impl.PSFCFourSectionDictionary;
@@ -59,7 +60,7 @@ public class MultipleKD2GraphAssembler   extends AssemblerBase implements Assemb
                 byte[] kd2ser = GRPReader.load(file.getAbsolutePath(), dict);
 
 
-                KD2TreeDeserializer desr = new KD2TreeDeserializer();
+                KD2PPDeserializer desr = new KD2PPDeserializer();
                 List<LabledMatrix> matrices = desr.deserialize(kd2ser);
                 System.out.println("Created " + matrices.size() + " matrices");
                 KD2Graph graph = new KD2Graph(matrices, dict);
