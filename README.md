@@ -49,6 +49,20 @@ To adjust the RAM usage to 4GB use the following:
 export RDF_2_K2_JVM=-Xmx4g
 ```
 
+# Precompressed Datasets
+
+You can get precompressed datasets at https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/
+
+* [ArchivesHub](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/archiveshub/)
+* [Jamendo](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/jamendo/)
+* [scholarly data](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/scholarlydata/)
+* [DBLP 2017](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dblp-2017/)
+* [DBpedia en 03.2021 in sections](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-03_2021/sections/)
+* [DBpedia en 03.2021 single file](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-03_2021/)
+* [DBpedia all other available languages without nif datasets 10.2016](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-10_2016/)
+* [DBpedia all other available languages with nif datasets 10.2016](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-10_2016-nif/)
+
+
 # Querying KD2 with Fuseki
 
 ### Prepacked 
