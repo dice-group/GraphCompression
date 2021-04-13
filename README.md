@@ -1,5 +1,7 @@
 Compression of RDF graphs using k2 trees
 
+For our C++ implementation visit https://github.com/dice-group/rdf2k2-cpp
+
 # Download and install
 
 ### General
@@ -57,7 +59,7 @@ You can get precompressed datasets at https://hobbitdata.informatik.uni-leipzig.
 * [Jamendo](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/jamendo/)
 * [scholarly data](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/scholarlydata/)
 * [DBLP 2017](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dblp-2017/)
-* [DBpedia en 03.2021 in sections](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-03_2021/sections/)
+* [DBpedia en 03.2021 in sections](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-03_2021/dbpedia_sections/)
 * [DBpedia en 03.2021 single file](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-03_2021/)
 * [DBpedia all other available languages without nif datasets 10.2016](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-10_2016/)
 * [DBpedia all other available languages with nif datasets 10.2016](https://hobbitdata.informatik.uni-leipzig.de/rdf2k2/dbpedia-10_2016-nif/)
